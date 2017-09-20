@@ -29,7 +29,7 @@ Lab works for network security 2017
 	* Problem: 
 		* Session Hijack
 		* Session Flood 
-	* 不加PKI
+	* No PKI
 
 
 ## Some Poll Results from Lecture:
