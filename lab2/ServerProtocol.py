@@ -17,6 +17,7 @@ class ServerProtocol(asyncio.Protocol):
         self.clientSeqNum = None
 
     def connection_made(self, transport):
+        print("connection made!")
         self.transport = transport
 
     def data_received(self, data):
