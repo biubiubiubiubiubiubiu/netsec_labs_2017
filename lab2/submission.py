@@ -10,11 +10,20 @@ import playground
 import logging
 import asyncio, sys, time
 
+def serverCallback(this, message=None):
+    # DEBUG: closing after handshake
+    print("Server callback: Handshake successful. Shutting down connection from server side...")
+    this.sendRip()
+
+def clientCallback(this, message=None):
+    print("Client callback: Handshake successful.")
+
+
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
-    logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr  
+    # logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
+    # logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
     testArgs = {}
-    
+
     args= sys.argv[1:]
     i = 0
     for arg in args:
@@ -30,17 +39,19 @@ if __name__ == "__main__":
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
-    loop.set_debug(enabled=True)
+    # loop.set_debug(enabled=True)
 
-  
+
     if mode.lower() == "server":
-        coro = playground.getConnector().create_playground_server(lambda: ServerProtocol(), 101)
+        coro = playground.getConnector().create_playground_server(lambda: ServerProtocol(loop, serverCallback), 101)
         server = loop.run_until_complete(coro)
         print("Submission: Server started at {}".format(server.sockets[0].gethostname()))
         loop.run_forever()
         loop.close()
     elif mode.lower() == "client":
         print("Submission: Testing three-way handshake...")
-        coro = playground.getConnector().create_playground_connection(lambda: ClientProtocol(), remoteAddress, 101)
+        coro = playground.getConnector().create_playground_connection(lambda: ClientProtocol(loop, clientCallback), remoteAddress, 101)
         transport, protocol = loop.run_until_complete(coro)
-        print("Customer Connected. Starting UI t:{}. p:{}".format(transport, protocol))
+        print("Client Connected. Starting UI t:{}. p:{}".format(transport, protocol))
+        loop.run_forever()
+        loop.close()

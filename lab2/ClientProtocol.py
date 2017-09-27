@@ -3,18 +3,28 @@ from playground.network.packet import PacketType
 import asyncio
 import os
 
+
 class ClientProtocol(asyncio.Protocol):
+    STATE_DESC = {
+        0: "INITIAL_SYN",
+        1: "SYN_ACK",
+        2: "TRANSMISSION"
+    }
+
     STATE_CLIENT_INITIAL_SYN = 0
     STATE_CLIENT_SYN_ACK = 1
     STATE_CLIENT_TRANSMISSION = 2
 
-    def __init__(self):
-        print("Hello client")
+    def __init__(self, loop=None, callback=None):
         self.state = ClientProtocol.STATE_CLIENT_INITIAL_SYN
+        print("Initializing client with state " +
+              ClientProtocol.STATE_DESC[self.state])
         self.transport = None
         self.deserializer = PacketType.Deserializer()
         self.seqNum = int.from_bytes(os.urandom(4), byteorder='big')
         self.serverSeqNum = None
+        self.loop = loop
+        self.callback = callback
 
     def connection_made(self, transport):
         self.transport = transport
@@ -22,25 +32,48 @@ class ClientProtocol(asyncio.Protocol):
             synPacket = HandShake()
             synPacket.Type = HandShake.TYPE_SYN
             synPacket.SequenceNumber = self.seqNum
+            print("Sending SYN packet with sequence number " + str(self.seqNum) +
+                  ", current state " + ClientProtocol.STATE_DESC[self.state])
             self.transport.write(synPacket.__serialize__())
 
     def data_received(self, data):
         self.deserializer.update(data)
         for pkt in self.deserializer.nextPackets():
-            print("Packet received")
-            print("Packet received")
             if isinstance(pkt, HandShake):
-                print("Handshake!")
                 if pkt.Type == HandShake.TYPE_SYN_ACK:
-                    print("Received Syn-Ack packet")
+                    print("Received SYN-ACK packet with sequence number " +
+                          str(pkt.SequenceNumber))
                     self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
                     self.seqNum += 1
                     self.serverSeqNum = pkt.SequenceNumber + 1
                     ackPacket = HandShake()
                     ackPacket.Type = HandShake.TYPE_ACK
                     ackPacket.SequenceNumber = self.seqNum
-                    ackPacket.Acknowledgement = pkt.SequenceNumber + 1
+                    ackPacket.Acknowledgement = self.serverSeqNum
+                    print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                          ", current state " + ClientProtocol.STATE_DESC[self.state])
                     self.transport.write(ackPacket.__serialize__())
+                    if self.callback:
+                        self.callback(
+                            self, {"type": HandShake.TYPE_SYN_ACK, "state": self.state})
+                elif pkt.Type == HandShake.TYPE_RIP:
+                    print("Received RIP packet with sequence number " +
+                          str(pkt.SequenceNumber))
+                    self.serverSeqNum = pkt.SequenceNumber + 1
+                    self.seqNum += 1
+                    ripAckPacket = HandShake()
+                    ripAckPacket.Type = HandShake.TYPE_RIP_ACK
+                    ripAckPacket.SequenceNumber = self.seqNum
+                    ripAckPacket.Acknowledgement = self.serverSeqNum
+                    print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                          ", current state " + ClientProtocol.STATE_DESC[self.state])
+                    self.transport.write(ripAckPacket.__serialize__())
+                    print("Closing...")
+                    self.stop()
+                elif pkt.Type == HandShake.TYPE_RIP_ACK:
+                    print("Received RIP-ACK packet with sequence number " +
+                          str(pkt.SequenceNumber))
+                    self.serverSeqNum = pkt.SequenceNumber + 1
                 else:
                     print("Wrong packet type")
             else:
@@ -49,15 +82,31 @@ class ClientProtocol(asyncio.Protocol):
     def connection_lost(self, exc):
         print('The server closed the connection')
         self.transport = None
+        self.stop()
 
-    def sendData(self, data):
-        if self.state == ClientProtocol.STATE_CLIENT_TRANSMISSION:
-            print("Sending data")
-            dataPacket = HandShake()
-            dataPacket.Type = None # Handshake.TYPE_DATA
-            dataPacket.SequenceNumber = self.seqNum
-            dataPacket.Checksum = None # checksum()
-            dataPacket.Data = data
+    def stop(self):
+        if self.transport:
+            self.transport.close()
+        if self.loop:
+            print("Goodbye!")
+            self.loop.stop()
 
-        else:
-            print("Wrong client state")
+    def sendRip(self):
+        ripPacket = HandShake()
+        ripPacket.Type = HandShake.TYPE_RIP
+        ripPacket.SequenceNumber = self.seqNum
+        ripPacket.Acknowledgement = self.serverSeqNum
+        print("Sending RIP packet with sequence number " + str(self.seqNum) +
+              ", current state " + ClientProtocol.STATE_DESC[self.state])
+        self.transport.write(ripPacket.__serialize__())
+
+    # def sendData(self, data):
+    #     if self.state == ClientProtocol.STATE_CLIENT_TRANSMISSION:
+    #         print("Sending data")
+    #         dataPacket = HandShake()
+    #         dataPacket.Type = None # Handshake.TYPE_DATA
+    #         dataPacket.SequenceNumber = self.seqNum
+    #         dataPacket.Checksum = None # checksum()
+    #         dataPacket.Data = data
+    #     else:
+    #         print("Wrong client state")
