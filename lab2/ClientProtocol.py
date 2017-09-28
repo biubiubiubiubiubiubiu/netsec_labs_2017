@@ -80,7 +80,7 @@ class ClientProtocol(StackingProtocol):
                           str(pkt.SequenceNumber))
                     self.serverSeqNum = pkt.SequenceNumber + 1
                 else:
-                    print("Wrong packet type")
+                    print("Client: Wrong packet type， current state: {!r}, received: {!r}".format(self.state, pkt.Type))
             else:
                 print("Wrong packet class type")
 

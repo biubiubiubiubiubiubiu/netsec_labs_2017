@@ -79,7 +79,7 @@ class ServerProtocol(StackingProtocol):
                 else:
                     print("Wrong packet type: " + str(pkt.Type))
             else:
-                print("Wrong packet class type")
+                print("Server: Wrong packet class type")
 
     def connection_lost(self, exc):
         print('The client closed the connection')
