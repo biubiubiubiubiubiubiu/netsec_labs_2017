@@ -6,6 +6,9 @@ from playground.network.packet import PacketType
 from playground.asyncio_lib.testing import TestLoopEx
 from playground.network.testing import MockTransportToStorageStream
 from playground.network.testing import MockTransportToProtocol
+from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
+from PassThroughLayer1 import PassThroughLayer1
+from PassThroughLayer2 import PassThroughLayer2
 import playground
 import logging
 import asyncio, sys, time
@@ -20,8 +23,8 @@ def clientCallback(this, message=None):
 
 
 if __name__ == "__main__":
-    # logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
-    # logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
+    logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
+    logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
     testArgs = {}
 
     args= sys.argv[1:]
@@ -39,18 +42,20 @@ if __name__ == "__main__":
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
-    # loop.set_debug(enabled=True)
-
+    loop.set_debug(enabled=True)
+    f = StackingProtocolFactory(lambda: ServerProtocol(), lambda: ClientProtocol())
+    ptConnector = playground.Connector(protocolStack=f)
+    playground.setConnector("passthrough", ptConnector)
 
     if mode.lower() == "server":
-        coro = playground.getConnector().create_playground_server(lambda: ServerProtocol(loop, serverCallback), 101)
+        coro = playground.getConnector('passthrough').create_playground_server(lambda: PassThroughLayer1(), 101)
         server = loop.run_until_complete(coro)
         print("Submission: Server started at {}".format(server.sockets[0].gethostname()))
         loop.run_forever()
         loop.close()
     elif mode.lower() == "client":
         print("Submission: Testing three-way handshake...")
-        coro = playground.getConnector().create_playground_connection(lambda: ClientProtocol(loop, clientCallback), remoteAddress, 101)
+        coro = playground.getConnector('passthrough').create_playground_connection(lambda: PassThroughLayer2(), remoteAddress, 101)
         transport, protocol = loop.run_until_complete(coro)
         print("Client Connected. Starting UI t:{}. p:{}".format(transport, protocol))
         loop.run_forever()

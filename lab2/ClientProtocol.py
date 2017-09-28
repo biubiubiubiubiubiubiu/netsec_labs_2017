@@ -2,9 +2,11 @@ from HandShake import HandShake
 from playground.network.packet import PacketType
 import asyncio
 import os
+from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
+import playground
 
 
-class ClientProtocol(asyncio.Protocol):
+class ClientProtocol(StackingProtocol):
     STATE_DESC = {
         0: "INITIAL_SYN",
         1: "SYN_ACK",
@@ -56,6 +58,9 @@ class ClientProtocol(asyncio.Protocol):
                     if self.callback:
                         self.callback(
                             self, {"type": HandShake.TYPE_SYN_ACK, "state": self.state})
+                    higherTransport = StackingTransport(self.transport)
+                    self.higherProtocol().connection_made(higherTransport)
+
                 elif pkt.Type == HandShake.TYPE_RIP:
                     print("Received RIP packet with sequence number " +
                           str(pkt.SequenceNumber))
