@@ -2,7 +2,7 @@ from playground.network.packet import PacketType
 from playground.network.packet.fieldtypes import UINT16, STRING, UINT8, UINT32, BUFFER
 from playground.network.packet.fieldtypes.attributes import Optional
 
-class HandShake(PacketType):
+class PEEPPacket(PacketType):
     TYPE_SYN = 0
     TYPE_SYN_ACK = 1
     TYPE_ACK = 2

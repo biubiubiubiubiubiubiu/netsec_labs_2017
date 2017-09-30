@@ -1,4 +1,4 @@
-from HandShake import HandShake
+from PEEPPacket import PEEPPacket
 from playground.network.packet import PacketType
 import asyncio
 import os
@@ -33,20 +33,20 @@ class ServerProtocol(StackingProtocol):
     def data_received(self, data):
         self.deserializer.update(data)
         for pkt in self.deserializer.nextPackets():
-            if isinstance(pkt, HandShake):
-                if pkt.Type == HandShake.TYPE_SYN:
+            if isinstance(pkt, PEEPPacket):
+                if pkt.Type == PEEPPacket.TYPE_SYN:
                     print("Received SYN packet with sequence number " +
                           str(pkt.SequenceNumber))
                     self.state = ServerProtocol.STATE_SERVER_SYN
                     self.clientSeqNum = pkt.SequenceNumber + 1
-                    synAckPacket = HandShake()
-                    synAckPacket.Type = HandShake.TYPE_SYN_ACK
+                    synAckPacket = PEEPPacket()
+                    synAckPacket.Type = PEEPPacket.TYPE_SYN_ACK
                     synAckPacket.SequenceNumber = self.seqNum
                     synAckPacket.Acknowledgement = self.clientSeqNum
                     print("Sending SYN_ACK packet with sequence number " + str(self.seqNum) +
                           ", current state " + ServerProtocol.STATE_DESC[self.state])
                     self.transport.write(synAckPacket.__serialize__())
-                elif pkt.Type == HandShake.TYPE_ACK:
+                elif pkt.Type == PEEPPacket.TYPE_ACK:
                     print("Received ACK packet with sequence number " +
                           str(pkt.SequenceNumber))
                     self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
@@ -54,16 +54,16 @@ class ServerProtocol(StackingProtocol):
                     self.clientSeqNum = pkt.SequenceNumber + 1
                     if self.callback:
                         self.callback(
-                            self, {"type": HandShake.TYPE_ACK, "state": self.state})
+                            self, {"type": PEEPPacket.TYPE_ACK, "state": self.state})
                     higherTransport = StackingTransport(self.transport)
                     self.higherProtocol().connection_made(higherTransport)
-                elif pkt.Type == HandShake.TYPE_RIP:
+                elif pkt.Type == PEEPPacket.TYPE_RIP:
                     print("Received RIP packet with sequence number " +
                           str(pkt.SequenceNumber))
                     self.seqNum += 1
                     self.clientSeqNum = pkt.SequenceNumber + 1
-                    ripAckPacket = HandShake()
-                    ripAckPacket.Type = HandShake.TYPE_RIP_ACK
+                    ripAckPacket = PEEPPacket()
+                    ripAckPacket.Type = PEEPPacket.TYPE_RIP_ACK
                     ripAckPacket.SequenceNumber = self.seqNum
                     ripAckPacket.Acknowledgement = self.clientSeqNum
                     print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
@@ -71,7 +71,7 @@ class ServerProtocol(StackingProtocol):
                     self.transport.write(ripAckPacket.__serialize__())
                     # NOT IMPLEMENTED: send remaining packets in buffer
                     self.sendRip()
-                elif pkt.Type == HandShake.TYPE_RIP_ACK:
+                elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                     print("Received RIP-ACK packet with sequence number " +
                           str(pkt.SequenceNumber))
                     print("Closing...")
@@ -94,8 +94,8 @@ class ServerProtocol(StackingProtocol):
             self.loop.stop()
 
     def sendRip(self):
-        ripPacket = HandShake()
-        ripPacket.Type = HandShake.TYPE_RIP
+        ripPacket = PEEPPacket()
+        ripPacket.Type = PEEPPacket.TYPE_RIP
         ripPacket.SequenceNumber = self.seqNum
         ripPacket.Acknowledgement = self.clientSeqNum
         print("Sending RIP packet with sequence number " + str(self.seqNum) +
@@ -105,8 +105,8 @@ class ServerProtocol(StackingProtocol):
     # def sendData(self, data):
     #     if self.state == ServerProtocol.STATE_SERVER_TRANSMISSION:
     #         print("Sending data")
-    #         dataPacket = HandShake()
-    #         dataPacket.Type = None # Handshake.TYPE_DATA
+    #         dataPacket = PEEPPacket()
+    #         dataPacket.Type = None # PEEPPacket.TYPE_DATA
     #         dataPacket.SequenceNumber = self.seqNum
     #         dataPacket.Checksum = None # checksum()
     #         dataPacket.Data = data
