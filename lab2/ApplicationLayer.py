@@ -27,7 +27,7 @@ class EchoPacket(PacketType):
               ("original", BOOL),
               ("message", STRING)
              ]
-             
+
 class EchoServerProtocol(asyncio.Protocol):
     """
     This is our class for the Server's protocol. It simply receives
@@ -85,6 +85,7 @@ class EchoClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         print("Connected to {}".format(transport.get_extra_info("peername")))
         self.transport = transport
+        self.send("hello")
         
     def data_received(self, data):
         self.deserializer.update(data)
@@ -95,6 +96,7 @@ class EchoClientProtocol(asyncio.Protocol):
                 print("Got a message from server marked as original. Dropping.")
         
     def send(self, data):
+        print("EchoClientProtocol: Sending echo message...")
         echoPacket = EchoPacket(original=True, message=data)
         
         self.transport.write(echoPacket.__serialize__())
