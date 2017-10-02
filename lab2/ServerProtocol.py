@@ -3,7 +3,9 @@ from playground.network.packet import PacketType
 import asyncio
 import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
+from PEEPTransports.SSLTransport import SSLTransport
 import playground
+from ApplicationLayer import *
 
 class ServerProtocol(StackingProtocol):
     STATE_DESC = {
@@ -55,7 +57,7 @@ class ServerProtocol(StackingProtocol):
                     if self.callback:
                         self.callback(
                             self, {"type": PEEPPacket.TYPE_ACK, "state": self.state})
-                    higherTransport = StackingTransport(self.transport)
+                    higherTransport = SSLTransport(self.transport)
                     self.higherProtocol().connection_made(higherTransport)
                 elif pkt.Type == PEEPPacket.TYPE_RIP:
                     print("Received RIP packet with sequence number " +
@@ -77,9 +79,9 @@ class ServerProtocol(StackingProtocol):
                     print("Closing...")
                     self.stop()
                 else:
-                    print("Wrong packet type: " + str(pkt.Type))
+                    print("Wrong packet type: {!r}, state: {!r} ".format(str(type(pkt)), str(self.state)))
             else:
-                print("Server: Wrong packet class type")
+                print("Wrong packet type: {!r}, state: {!r} ".format(str(type(pkt)), str(self.state)))
 
     def connection_lost(self, exc):
         print('The client closed the connection')

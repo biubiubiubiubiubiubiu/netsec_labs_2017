@@ -4,6 +4,7 @@ import asyncio
 import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 import playground
+from PEEPTransports.SSLTransport import SSLTransport
 
 
 class ClientProtocol(StackingProtocol):
@@ -58,7 +59,7 @@ class ClientProtocol(StackingProtocol):
                     if self.callback:
                         self.callback(
                             self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
-                    higherTransport = StackingTransport(self.transport)
+                    higherTransport = SSLTransport(self.transport)
                     self.higherProtocol().connection_made(higherTransport)
 
                 elif pkt.Type == PEEPPacket.TYPE_RIP:
