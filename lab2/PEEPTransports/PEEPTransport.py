@@ -4,8 +4,8 @@ import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 import playground
 
-class SSLTransport(StackingTransport):
+class PEEPTransport(StackingTransport):
 
     def write(self, data):
-        print("SSLTransport: Write got {} bytes of data to pass to lower layer".format(len(data)))
+        print("PEEPTransport: Write got {} bytes of data to pass to lower layer".format(len(data)))
         super().write(data)

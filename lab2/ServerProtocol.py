@@ -3,7 +3,7 @@ from playground.network.packet import PacketType
 import asyncio
 import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
-from PEEPTransports.SSLTransport import SSLTransport
+from PEEPTransports.PEEPTransport import PEEPTransport
 import playground
 from ApplicationLayer import *
 
@@ -57,7 +57,7 @@ class ServerProtocol(StackingProtocol):
                     if self.callback:
                         self.callback(
                             self, {"type": PEEPPacket.TYPE_ACK, "state": self.state})
-                    higherTransport = SSLTransport(self.transport)
+                    higherTransport = PEEPTransport(self.transport)
                     self.higherProtocol().connection_made(higherTransport)
                 elif pkt.Type == PEEPPacket.TYPE_RIP:
                     print("Received RIP packet with sequence number " +
