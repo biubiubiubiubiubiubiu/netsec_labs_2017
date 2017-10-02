@@ -1,26 +1,21 @@
-from PEEPPacket import PEEPPacket
 from ClientProtocol import ClientProtocol
 from ServerProtocol import ServerProtocol
 
-from playground.network.packet import PacketType
-from playground.asyncio_lib.testing import TestLoopEx
-from playground.network.testing import MockTransportToStorageStream
-from playground.network.testing import MockTransportToProtocol
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 from PassThroughLayer1 import PassThroughLayer1
 from PassThroughLayer2 import PassThroughLayer2
 from ApplicationLayer import EchoClientProtocol, EchoServerProtocol, EchoControl
 import playground
 import logging
-import asyncio, sys, time
+import asyncio, sys
 
-def serverCallback(this, message=None):
-    # DEBUG: closing after handshake
-    print("Server callback: Handshake successful. Shutting down connection from server side...")
-    this.sendRip()
-
-def clientCallback(this, message=None):
-    print("Client callback: Handshake successful.")
+# def serverCallback(this, message=None):
+#     # DEBUG: closing after handshake
+#     print("Server callback: Handshake successful. Shutting down connection from server side...")
+#     this.sendRip()
+#
+# def clientCallback(this, message=None):
+#     print("Client callback: Handshake successful.")
 
 
 if __name__ == "__main__":
@@ -38,14 +33,15 @@ if __name__ == "__main__":
             testArgs[i] = arg
             i+=1
     mode = ""
+    remoteAddress = ""
     if len(testArgs) > 0:
         mode = testArgs[0]
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
     loop.set_debug(enabled=True)
-    f_server = StackingProtocolFactory(lambda: PassThroughLayer1(), lambda: ServerProtocol())
-    f_client = StackingProtocolFactory(lambda: PassThroughLayer2(), lambda: ClientProtocol())
+    f_server = StackingProtocolFactory(lambda: PassThroughLayer1(), lambda: ServerProtocol(loop))
+    f_client = StackingProtocolFactory(lambda: PassThroughLayer2(), lambda: ClientProtocol(loop))
     ptConnector_server = playground.Connector(protocolStack=f_server)
     ptConnector_client = playground.Connector(protocolStack=f_client)
     playground.setConnector("server", ptConnector_server)
