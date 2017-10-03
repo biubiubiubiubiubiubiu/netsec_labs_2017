@@ -58,3 +58,7 @@ SYN State (state 1)
  
 Transmission State (State 2)
 - Server can now send data packets to client.
+
+#### Checking with seqNum:
+- when the type is TYPE_DATA, then we need to check the difference between coming sequence numbercurrent server number(or client number) is the size of data bytes minus 1. 
+- When the type is TYPE_RIP, we need to check whetehr the coming sequence number is match with the current client number (or Server number). 
