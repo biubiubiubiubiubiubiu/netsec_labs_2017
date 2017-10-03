@@ -1,9 +1,8 @@
-from HandShake import HandShake
+from PEEPPacket import PEEPPacket
 from playground.network.packet import PacketType
-import asyncio
 import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
-import playground
+from PEEPTransports.PEEPTransport import PEEPTransport
 
 
 class ClientProtocol(StackingProtocol):
@@ -18,6 +17,7 @@ class ClientProtocol(StackingProtocol):
     STATE_CLIENT_TRANSMISSION = 2
 
     def __init__(self, loop=None, callback=None):
+        super().__init__()
         self.state = ClientProtocol.STATE_CLIENT_INITIAL_SYN
         print("Initializing client with state " +
               ClientProtocol.STATE_DESC[self.state])
@@ -31,56 +31,71 @@ class ClientProtocol(StackingProtocol):
     def connection_made(self, transport):
         self.transport = transport
         if self.state == ClientProtocol.STATE_CLIENT_INITIAL_SYN:
-            synPacket = HandShake()
-            synPacket.Type = HandShake.TYPE_SYN
-            synPacket.SequenceNumber = self.seqNum
+            synPacket = PEEPPacket.makeSynPacket(self.seqNum)
             print("Sending SYN packet with sequence number " + str(self.seqNum) +
                   ", current state " + ClientProtocol.STATE_DESC[self.state])
+            print("Packet checksum: " + str(synPacket.Checksum))
             self.transport.write(synPacket.__serialize__())
 
     def data_received(self, data):
         self.deserializer.update(data)
         for pkt in self.deserializer.nextPackets():
-            if isinstance(pkt, HandShake):
-                if pkt.Type == HandShake.TYPE_SYN_ACK:
-                    print("Received SYN-ACK packet with sequence number " +
-                          str(pkt.SequenceNumber))
-                    self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
-                    self.seqNum += 1
-                    self.serverSeqNum = pkt.SequenceNumber + 1
-                    ackPacket = HandShake()
-                    ackPacket.Type = HandShake.TYPE_ACK
-                    ackPacket.SequenceNumber = self.seqNum
-                    ackPacket.Acknowledgement = self.serverSeqNum
-                    print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                          ", current state " + ClientProtocol.STATE_DESC[self.state])
-                    self.transport.write(ackPacket.__serialize__())
-                    if self.callback:
-                        self.callback(
-                            self, {"type": HandShake.TYPE_SYN_ACK, "state": self.state})
-                    higherTransport = StackingTransport(self.transport)
-                    self.higherProtocol().connection_made(higherTransport)
+            if isinstance(pkt, PEEPPacket):
+                if pkt.verifyChecksum():
+                    if pkt.Type == PEEPPacket.TYPE_SYN_ACK:
+                        print("Received SYN-ACK packet with sequence number " +
+                              str(pkt.SequenceNumber))
+                        self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
+                        # self.seqNum += 1
+                        self.serverSeqNum = pkt.SequenceNumber + 1
+                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                              ", current state " + ClientProtocol.STATE_DESC[self.state])
+                        self.transport.write(ackPacket.__serialize__())
+                        if self.callback:
+                            self.callback(
+                                self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
+                        higherTransport = PEEPTransport(self.transport, self)
+                        self.higherProtocol().connection_made(higherTransport)
 
-                elif pkt.Type == HandShake.TYPE_RIP:
-                    print("Received RIP packet with sequence number " +
-                          str(pkt.SequenceNumber))
-                    self.serverSeqNum = pkt.SequenceNumber + 1
-                    self.seqNum += 1
-                    ripAckPacket = HandShake()
-                    ripAckPacket.Type = HandShake.TYPE_RIP_ACK
-                    ripAckPacket.SequenceNumber = self.seqNum
-                    ripAckPacket.Acknowledgement = self.serverSeqNum
-                    print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
-                          ", current state " + ClientProtocol.STATE_DESC[self.state])
-                    self.transport.write(ripAckPacket.__serialize__())
-                    print("Closing...")
-                    self.stop()
-                elif pkt.Type == HandShake.TYPE_RIP_ACK:
-                    print("Received RIP-ACK packet with sequence number " +
-                          str(pkt.SequenceNumber))
-                    self.serverSeqNum = pkt.SequenceNumber + 1
+                    elif pkt.Type == PEEPPacket.TYPE_ACK:
+                        print("Received ACK packet with sequence number " +
+                              str(pkt.SequenceNumber))
+                        self.serverSeqNum = pkt.SequenceNumber + 1
+
+                    elif pkt.Type == PEEPPacket.TYPE_DATA:
+                        print("Received DATA packet with sequence number " +
+                              str(pkt.SequenceNumber))
+                        self.serverSeqNum = pkt.SequenceNumber + 1
+                        self.higherProtocol().data_received(pkt.Data)
+                        # if self.callback:
+                        #     self.callback(
+                        #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
+                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                              ", current state " + ClientProtocol.STATE_DESC[self.state])
+                        self.transport.write(ackPacket.__serialize__())
+
+                    elif pkt.Type == PEEPPacket.TYPE_RIP:
+                        print("Received RIP packet with sequence number " +
+                              str(pkt.SequenceNumber))
+                        # self.seqNum += 1
+                        self.serverSeqNum = pkt.SequenceNumber + 1
+                        ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                        print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                              ", current state " + ClientProtocol.STATE_DESC[self.state])
+                        self.transport.write(ripAckPacket.__serialize__())
+                        print("Closing...")
+                        self.stop()
+                    elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
+                        print("Received RIP-ACK packet with sequence number " +
+                              str(pkt.SequenceNumber))
+                        self.serverSeqNum = pkt.SequenceNumber + 1
+                    else:
+                        print("Client: Wrong packet type， current state: {!r}, received: {!r}".format(self.state,
+                                                                                                      pkt.Type))
                 else:
-                    print("Wrong packet type")
+                    print("Wrong packet checksum: " + str(pkt.Checksum))
             else:
                 print("Wrong packet class type")
 
@@ -88,6 +103,10 @@ class ClientProtocol(StackingProtocol):
         print('The server closed the connection')
         self.transport = None
         self.stop()
+
+    def raisedSeqNum(self, amount=1):
+        self.seqNum += amount
+        return self.seqNum
 
     def stop(self):
         if self.transport:
@@ -97,21 +116,8 @@ class ClientProtocol(StackingProtocol):
             self.loop.stop()
 
     def sendRip(self):
-        ripPacket = HandShake()
-        ripPacket.Type = HandShake.TYPE_RIP
-        ripPacket.SequenceNumber = self.seqNum
-        ripPacket.Acknowledgement = self.serverSeqNum
+        self.seqNum += 1
+        ripPacket = PEEPPacket.makeRipPacket(self.seqNum, self.clientSeqNum)
         print("Sending RIP packet with sequence number " + str(self.seqNum) +
               ", current state " + ClientProtocol.STATE_DESC[self.state])
         self.transport.write(ripPacket.__serialize__())
-
-    # def sendData(self, data):
-    #     if self.state == ClientProtocol.STATE_CLIENT_TRANSMISSION:
-    #         print("Sending data")
-    #         dataPacket = HandShake()
-    #         dataPacket.Type = None # Handshake.TYPE_DATA
-    #         dataPacket.SequenceNumber = self.seqNum
-    #         dataPacket.Checksum = None # checksum()
-    #         dataPacket.Data = data
-    #     else:
-    #         print("Wrong client state")

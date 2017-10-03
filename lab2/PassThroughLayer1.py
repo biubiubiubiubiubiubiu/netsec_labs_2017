@@ -1,12 +1,13 @@
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 import playground
+from PEEPTransports.AppTransport import AppTransport
 
 class PassThroughLayer1(StackingProtocol):
     
     def connection_made(self, transport):
         self.transport = transport
         print("PassThroughLayer1: connection_made called, sending higher transport to ClientDemo")
-        higherTransport = StackingTransport(self.transport)
+        higherTransport = AppTransport(self.transport)
         self.higherProtocol().connection_made(higherTransport)
     
     def data_received(self, data):
