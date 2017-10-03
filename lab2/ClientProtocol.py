@@ -75,7 +75,7 @@ class ClientProtocol(StackingProtocol):
                         		", current state " + ClientProtocol.STATE_DESC[self.state])
                         	self.transport.write(ackPacket.__serialize__())
                         else:
-                        	print("error")
+                        	print("the client num is not match with seq num in the client side when received data is TYPE_DATA")
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP:
                         print("Received RIP packet with sequence number " +
@@ -89,7 +89,7 @@ class ClientProtocol(StackingProtocol):
                         	self.transport.write(ripAckPacket.__serialize__())
                         	print("Closing...")
                         else:
-                        	print("not match!!!")
+                        	print("the client num is not match with seq num in the client side when received data is TYPE_RIP")
                         self.stop()
                     elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                         print("Received RIP-ACK packet with sequence number " +

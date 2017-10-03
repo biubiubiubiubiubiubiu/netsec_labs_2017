@@ -71,10 +71,7 @@ class ServerProtocol(StackingProtocol):
                         		", current state " + ServerProtocol.STATE_DESC[self.state])
                         	self.transport.write(ackPacket.__serialize__())
                         else:
-                        	print("Received data's sequence number is not match with client number")
-                        # if self.callback:
-                        #     self.callback(
-                        #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
+                        	print("Received data's sequence number is not match with client number in the serside when packet type is TYPE_DATA")
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP:
                         print("Received RIP packet with sequence number " +
@@ -91,7 +88,7 @@ class ServerProtocol(StackingProtocol):
                         	# NOT IMPLEMENTED: send remaining packets in buffer
                         	self.sendRip()
                         else:
-                        	print("received rip packet data sequence number is not match with clientSeqnum")
+                        	print("received rip packet data sequence number is not match with clientSeqnum in the server side when received data's type is TYPE_RIP")
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                         print("Received RIP-ACK packet with sequence number " +
