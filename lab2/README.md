@@ -3,8 +3,8 @@
 
 #### TODO LIST:
 1. Handle the sequence number of data-type packet
-2. Chunk the data into 1024 Bytes and reconstruct data in the other side
-3. For the receiver end, handle the data stream into right order and send back ACK for index of packet received
+2. Chunk the data into 1024 Bytes use some structure to record the packet to be sent
+3. For the receiver end, handle the data stream into right order, reconstruct the data back and send back ACK for index of packet received
 
 
 ### Protocol Definitions
