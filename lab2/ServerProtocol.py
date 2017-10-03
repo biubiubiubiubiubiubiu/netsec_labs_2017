@@ -42,6 +42,7 @@ class ServerProtocol(StackingProtocol):
                         self.state = ServerProtocol.STATE_SERVER_SYN
                         # self.seqNum += 1
                         self.clientSeqNum = pkt.SequenceNumber + 1
+
                         synAckPacket = PEEPPacket.makeSynAckPacket(self.raisedSeqNum(), self.clientSeqNum)
                         print("Sending SYN_ACK packet with sequence number " + str(self.seqNum) +
                               ", current state " + ServerProtocol.STATE_DESC[self.state])
@@ -51,6 +52,7 @@ class ServerProtocol(StackingProtocol):
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
                         self.clientSeqNum = pkt.SequenceNumber + 1
+
                         if self.state == ServerProtocol.STATE_SERVER_SYN:
                             self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
@@ -59,27 +61,37 @@ class ServerProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        self.clientSeqNum = pkt.SequenceNumber + 1
-                        self.higherProtocol().data_received(pkt.Data)
+
+                        if(pkt.SequenceNumber - self.clientSeqNum == len(pkt.Data) - 1):
+                        	print("mathed")
+                        	self.clientSeqNum = pkt.SequenceNumber + 1
+                        	self.higherProtocol().data_received(pkt.Data)
+                        	ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+                        	print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                        		", current state " + ServerProtocol.STATE_DESC[self.state])
+                        	self.transport.write(ackPacket.__serialize__())
+                        else:
+                        	print("Received data's sequence number is not match with client number")
                         # if self.callback:
                         #     self.callback(
                         #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
-                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ServerProtocol.STATE_DESC[self.state])
-                        self.transport.write(ackPacket.__serialize__())
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP:
                         print("Received RIP packet with sequence number " +
                               str(pkt.SequenceNumber))
                         # self.seqNum += 1
-                        self.clientSeqNum = pkt.SequenceNumber + 1
-                        ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-                        print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ServerProtocol.STATE_DESC[self.state])
-                        self.transport.write(ripAckPacket.__serialize__())
-                        # NOT IMPLEMENTED: send remaining packets in buffer
-                        self.sendRip()
+
+                        if(pkt.SequenceNumber == self.clientSeqNum):
+                        	print("matched!")
+                        	self.clientSeqNum = pkt.SequenceNumber + 1
+                        	ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+                        	print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                        		", current state " + ServerProtocol.STATE_DESC[self.state])
+                        	self.transport.write(ripAckPacket.__serialize__())
+                        	# NOT IMPLEMENTED: send remaining packets in buffer
+                        	self.sendRip()
+                        else:
+                        	print("received rip packet data sequence number is not match with clientSeqnum")
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                         print("Received RIP-ACK packet with sequence number " +
