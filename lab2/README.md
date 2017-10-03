@@ -3,6 +3,10 @@
 ### Protocol Definitions
 * HandShake PacketType Definitions
 
+#### TODO LIST:
+1. Handle the sequence number of data-type packet
+2. Chunk the data into 1024 Bytes and reconstruct data in the other side
+3. For the receiver end, handle the data stream into right order and send back ACK for index of packet received
 ```Python
 class HandShake(PacketType):
     DEFINITION_IDENTIFIER = "[PROTOCOL]-Handshake"
@@ -58,3 +62,4 @@ SYN State (state 1)
  
 Transmission State (State 2)
 - Server can now send data packets to client.
+
