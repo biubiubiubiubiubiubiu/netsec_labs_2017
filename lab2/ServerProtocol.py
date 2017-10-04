@@ -26,7 +26,7 @@ class ServerProtocol(StackingProtocol):
         self.loop = loop
         self.callback = callback
         self.receivedDataCache = []
-        self.sentDataCache = []
+        self.sentDataCache = {}
 
     def connection_made(self, transport):
         print("connection made!")
@@ -131,8 +131,8 @@ class ServerProtocol(StackingProtocol):
 
     def processDataPkt(self, pkt):
         self.clientSeqNum = pkt.SequenceNumber + 1
-        self.higherProtocol().data_received(pkt.Data)
         ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-        print("Sending ACK packet with sequence number " + str(self.seqNum) +
+        print("Sending ACK packet with sequence number " + str(self.seqNum) + ",ack number " + str(self.clientSeqNum)+
             ", current state " + ServerProtocol.STATE_DESC[self.state])
         self.transport.write(ackPacket.__serialize__())
+        self.higherProtocol().data_received(pkt.Data)

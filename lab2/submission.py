@@ -19,8 +19,8 @@ import asyncio, sys
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
-    logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
+    # logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
+    # logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
     testArgs = {}
 
     args= sys.argv[1:]

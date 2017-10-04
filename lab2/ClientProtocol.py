@@ -27,7 +27,7 @@ class ClientProtocol(StackingProtocol):
         self.serverSeqNum = None
         self.loop = loop
         self.callback = callback
-        self.sentDataCache = []
+        self.sentDataCache = {}
 
     def connection_made(self, transport):
         self.transport = transport
@@ -62,6 +62,10 @@ class ClientProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_ACK:
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
+                        dataRemoveSeq = pkt.Acknowledgement - 1
+                        if dataRemoveSeq in self.sentDataCache:
+                            print("Client: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
+                            del self.sentDataCache[dataRemoveSeq]
                         self.serverSeqNum = pkt.SequenceNumber + 1
 
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
