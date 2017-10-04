@@ -15,6 +15,8 @@ class ServerProtocol(StackingProtocol):
     STATE_SERVER_SYN = 1
     STATE_SERVER_TRANSMISSION = 2
 
+    MAXBYTE = 20
+
     def __init__(self, loop=None, callback=None):
         super().__init__()
         print("Hello server")
@@ -66,17 +68,17 @@ class ServerProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        if pkt.SequenceNumber - self.clientSeqNum <= 1024:
+                        if pkt.SequenceNumber - self.clientSeqNum <= self.MAXBYTE:
                             # If it is, send an ack on this packet, update self.clientSeqNum, push it up
                             self.processDataPkt(pkt)
                             if len(self.receivedDataCache) > 0:
                                 # Sort the list, if there is a matching sequence number inside the list, push it up
                                 self.receivedDataCache = sorted(self.receivedDataCache, key=lambda pkt: pkt.SequenceNumber)
-                                while (receivedDataCache[0].SequenceNumber - self.clientSeqNum <= 1024):    
+                                while (receivedDataCache[0].SequenceNumber - self.clientSeqNum <= self.MAXBYTE):    
                                     self.processDataPkt(receivedDataCache.pop(0))
                         else:
                             # if the order of pkt is wrong, simply append it to cache
-                            self.dataCache.append(pkt)
+                            self.receivedDataCache.append(pkt)
 
                         # self.clientSeqNum = pkt.SequenceNumber + 1
                         # self.higherProtocol().data_received(pkt.Data)

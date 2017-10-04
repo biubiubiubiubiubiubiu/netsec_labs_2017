@@ -12,6 +12,8 @@ class ClientProtocol(StackingProtocol):
         2: "TRANSMISSION"
     }
 
+    MAXBYTE = 20
+
     STATE_CLIENT_INITIAL_SYN = 0
     STATE_CLIENT_SYN_ACK = 1
     STATE_CLIENT_TRANSMISSION = 2
@@ -27,6 +29,7 @@ class ClientProtocol(StackingProtocol):
         self.serverSeqNum = None
         self.loop = loop
         self.callback = callback
+        self.receivedDataCache = []
         self.sentDataCache = {}
 
     def connection_made(self, transport):
@@ -71,15 +74,17 @@ class ClientProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        self.serverSeqNum = pkt.SequenceNumber + 1
-                        self.higherProtocol().data_received(pkt.Data)
-                        # if self.callback:
-                        #     self.callback(
-                        #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
-                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
-                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ClientProtocol.STATE_DESC[self.state])
-                        self.transport.write(ackPacket.__serialize__())
+                        if pkt.SequenceNumber - self.serverSeqNum <= self.MAXBYTE:
+                            # If it is, send an ack on this packet, update self.clientSeqNum, push it up
+                            self.processDataPkt(pkt)
+                            if len(self.receivedDataCache) > 0:
+                                # Sort the list, if there is a matching sequence number inside the list, push it up
+                                self.receivedDataCache = sorted(self.receivedDataCache, key=lambda pkt: pkt.SequenceNumber)
+                                while (receivedDataCache[0].SequenceNumber - self.serverSeqNum <= self.MAXBYTE):    
+                                    self.processDataPkt(receivedDataCache.pop(0))
+                        else:
+                            # if the order of pkt is wrong, simply append it to cache
+                            self.receivedDataCache.append(pkt)
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP:
                         print("Received RIP packet with sequence number " +
@@ -126,3 +131,11 @@ class ClientProtocol(StackingProtocol):
         print("Sending RIP packet with sequence number " + str(self.seqNum) +
               ", current state " + ClientProtocol.STATE_DESC[self.state])
         self.transport.write(ripPacket.__serialize__())
+
+    def processDataPkt(self, pkt):
+        self.serverSeqNum = pkt.SequenceNumber + 1
+        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+        print("Sending ACK packet with sequence number " + str(self.seqNum) + ",ack number " + str(self.serverSeqNum)+
+            ", current state " + ClientProtocol.STATE_DESC[self.state])
+        self.transport.write(ackPacket.__serialize__())
+        self.higherProtocol().data_received(pkt.Data)
