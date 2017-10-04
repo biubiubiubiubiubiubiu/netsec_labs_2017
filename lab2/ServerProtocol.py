@@ -4,7 +4,6 @@ import os
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 from PEEPTransports.PEEPTransport import PEEPTransport
 
-
 class ServerProtocol(StackingProtocol):
     STATE_DESC = {
         0: "SYN_ACK",
@@ -26,6 +25,7 @@ class ServerProtocol(StackingProtocol):
         self.clientSeqNum = None
         self.loop = loop
         self.callback = callback
+        self.dataCache = []
 
     def connection_made(self, transport):
         print("connection made!")
@@ -59,15 +59,29 @@ class ServerProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        self.clientSeqNum = pkt.SequenceNumber + 1
-                        self.higherProtocol().data_received(pkt.Data)
-                        # if self.callback:
-                        #     self.callback(
-                        #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
-                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ServerProtocol.STATE_DESC[self.state])
-                        self.transport.write(ackPacket.__serialize__())
+                        if pkt.SequenceNumber - self.clientSeqNum <= 1024:
+                            # If it is, send an ack on this packet, update self.clientSeqNum, push it up
+                            self.processDataPkt(pkt)
+                            if len(self.dataCache) > 0:
+                                # Sort the list, if there is a matching sequence number inside the list, push it up
+                                self.dataCache = sorted(self.dataCache, key=lambda pkt: pkt.SequenceNumber)
+                                for dataChunk in self.dataCache:
+                                    if (dataChunk.SequenceNumber - self.clientSeqNum <= 1024):
+                                        self.processDataPkt(pkt)
+                                    else: 
+                                        break
+                        else:
+                            # if the order of pkt is wrong, simply append it to cache
+                            self.dataCache.append(pkt)
+
+                        # self.clientSeqNum = pkt.SequenceNumber + 1
+                        # self.higherProtocol().data_received(pkt.Data)
+                        # # if self.callback:
+                        # #     self.callback(
+                        # #         self, {"type": PEEPPacket.TYPE_DATA, "state": self.state})
+                        # ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+
+                        # self.transport.write(ackPacket.__serialize__())
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP:
                         print("Received RIP packet with sequence number " +
@@ -116,3 +130,11 @@ class ServerProtocol(StackingProtocol):
         print("Sending RIP packet with sequence number " + str(self.seqNum) +
               ", current state " + ServerProtocol.STATE_DESC[self.state])
         self.transport.write(ripPacket.__serialize__())
+
+    def processDataPkt(self, pkt):
+        self.clientSeqNum = pkt.SequenceNumber + 1
+        self.higherProtocol().data_received(pkt.Data)
+        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+        print("Sending ACK packet with sequence number " + str(self.seqNum) +
+            ", current state " + ServerProtocol.STATE_DESC[self.state])
+        self.transport.write(ackPacket.__serialize__())
