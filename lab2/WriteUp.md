@@ -37,4 +37,4 @@
 
 * Data Transmission:
 
-      The bytes from the client side will be processed in the PEEPTransport (PEEP transport is used to split data into chunks, and convert data type into the TYPE.DATA). After that, the converted data will be sent to the other side,which is the server side. At the same time, we also need to checksum, if it is correct, then we need to check sequence number. In other words, the sequence number in the server side should be previous client number plus the length of data minus one. After checking it correctly, then we can conitnue to transfer data to appliaation layer.   
+     The bytes from the client side will be processed in the PEEPTransport (PEEP transport is used to split data into chunks, and convert data type into the TYPE.DATA). After that, the converted data will be sent to the other side,which is the server side. At the same time, we also need to checksum, if it is correct, then we need to check sequence number. In other words, the sequence number in the server side should be previous client number plus the length of data minus one. After checking it correctly, then we can conitnue to transfer data to appliaation layer.   
