@@ -90,12 +90,17 @@ class ClientProtocol(StackingProtocol):
                         print("Received RIP packet with sequence number " +
                               str(pkt.SequenceNumber))
                         # self.seqNum += 1
-                        self.serverSeqNum = pkt.SequenceNumber + 1
-                        ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.serverSeqNum)
-                        print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ClientProtocol.STATE_DESC[self.state])
-                        self.transport.write(ripAckPacket.__serialize__())
-                        print("Closing...")
+
+                        if(pkt.SequenceNumber == self.serverSeqNum):
+                        	self.serverSeqNum = pkt.SequenceNumber + 1
+                        	ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                        	print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                        		", current state " + ClientProtocol.STATE_DESC[self.state])
+                        	self.transport.write(ripAckPacket.__serialize__())
+                        	print("Closing...")
+                        else:
+                        	print("Wrong packet seq num {!r}, pkt Type {!r} ".format(str(pkt.SequenceNumber),str(pkt.Type)))
+
                         self.stop()
                     elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                         print("Received RIP-ACK packet with sequence number " +
