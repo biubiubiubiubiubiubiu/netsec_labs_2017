@@ -51,11 +51,17 @@ class ServerProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_ACK:
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        self.clientSeqNum = pkt.SequenceNumber + 1
                         if self.state == ServerProtocol.STATE_SERVER_SYN:
+                            self.clientSeqNum = pkt.SequenceNumber + 1
                             self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
+                        elif self.STATE_DESC[self.state] == "TRANSMISSION":
+                            dataRemoveSeq = pkt.Acknowledgement - 1
+                            if dataRemoveSeq in self.sentDataCache:
+                                print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
+                                del self.sentDataCache[dataRemoveSeq]
+                            self.clientSeqNum = pkt.SequenceNumber + 1
 
                     elif pkt.Type == PEEPPacket.TYPE_DATA:
                         print("Received DATA packet with sequence number " +
