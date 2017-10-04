@@ -42,7 +42,6 @@ class ServerProtocol(StackingProtocol):
                         self.state = ServerProtocol.STATE_SERVER_SYN
                         # self.seqNum += 1
                         self.clientSeqNum = pkt.SequenceNumber + 1
-
                         synAckPacket = PEEPPacket.makeSynAckPacket(self.raisedSeqNum(), self.clientSeqNum)
                         print("Sending SYN_ACK packet with sequence number " + str(self.seqNum) +
                               ", current state " + ServerProtocol.STATE_DESC[self.state])
