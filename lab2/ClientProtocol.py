@@ -27,6 +27,7 @@ class ClientProtocol(StackingProtocol):
         self.serverSeqNum = None
         self.loop = loop
         self.callback = callback
+        self.sentDataCache = []
 
     def connection_made(self, transport):
         self.transport = transport

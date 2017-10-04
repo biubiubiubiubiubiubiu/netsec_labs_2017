@@ -13,24 +13,24 @@ class PEEPTransport(StackingTransport):
         if self.protocol:
             print("PEEPTransport: Write got {} bytes of data to package".format(len(data)))
             # Currently no chunking
-            self.dataChunks = self.split(data)
-            for dataChunk in dataChunks:
-                pkt = PEEPPacket.makeDataPacket(self.protocol.raisedSeqNum(len(data)), data)
+            i = 0
+            index = 1
+            while (i < len(data)):
+                print("sending {!r} packet".format(index))
+                sentData = None
+                if (i + self.MAXBYTE < len(data)):
+                    sentData = data[i: i + self.MAXBYTE]
+                else:
+                    sentData = data[i:]
+                i += self.MAXBYTE
+                pkt = PEEPPacket.makeDataPacket(self.protocol.raisedSeqNum(len(sentData)), sentData)
+                self.protocol.sentDataCache.append(sentData)
+                index += 1
                 super().write(pkt.__serialize__())
-            print("PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(len(self.dataChunks)))
+            print("PEEPTransport: data transmitting finished, number of packets sent: {!r}".format( + 1))
         
         else:
             print("PEEPTransport: Undefined protocol, writing anyway...")
             print("PEEPTransport: Write got {} bytes of data to pass to lower layer".format(len(data)))
             super().write(data)
-
-    def split(self, data):
-        splittedData = []
-        index = 0
-        while (index < len(data)):
-            n = len(splittedData)
-            if (index + MAXBYTE < len(data)):
-                splittedData.append((n, data[i: i + MAXBYTE]))
-            else:
-                splittedData.append((n, data[i:]))
             

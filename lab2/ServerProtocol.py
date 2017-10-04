@@ -25,7 +25,8 @@ class ServerProtocol(StackingProtocol):
         self.clientSeqNum = None
         self.loop = loop
         self.callback = callback
-        self.dataCache = []
+        self.receivedDataCache = []
+        self.sentDataCache = []
 
     def connection_made(self, transport):
         print("connection made!")
@@ -62,14 +63,11 @@ class ServerProtocol(StackingProtocol):
                         if pkt.SequenceNumber - self.clientSeqNum <= 1024:
                             # If it is, send an ack on this packet, update self.clientSeqNum, push it up
                             self.processDataPkt(pkt)
-                            if len(self.dataCache) > 0:
+                            if len(self.receivedDataCache) > 0:
                                 # Sort the list, if there is a matching sequence number inside the list, push it up
-                                self.dataCache = sorted(self.dataCache, key=lambda pkt: pkt.SequenceNumber)
-                                for dataChunk in self.dataCache:
-                                    if (dataChunk.SequenceNumber - self.clientSeqNum <= 1024):
-                                        self.processDataPkt(pkt)
-                                    else: 
-                                        break
+                                self.receivedDataCache = sorted(self.receivedDataCache, key=lambda pkt: pkt.SequenceNumber)
+                                while (receivedDataCache[0].SequenceNumber - self.clientSeqNum <= 1024):    
+                                    self.processDataPkt(receivedDataCache.pop(0))
                         else:
                             # if the order of pkt is wrong, simply append it to cache
                             self.dataCache.append(pkt)
