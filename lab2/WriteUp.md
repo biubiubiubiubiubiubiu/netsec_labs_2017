@@ -32,7 +32,7 @@
       At this time, when Server receives the TYPE_ACK packet form Client, it changes the state to "SYN_ACK". So the session is successfully established and data is able to be transmitted. 
 
 
-      ![](/images/Tcp-handshake.png)
+      ![png](/images/Tcp-handshake.png)
 
 
 * Data Transmission 
