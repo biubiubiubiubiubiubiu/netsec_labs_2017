@@ -37,4 +37,13 @@
 
 * Data Transmission:
 
-     The bytes from the client side will be processed in the PEEPTransport (PEEP transport is used to split data into chunks, and convert data type into the TYPE.DATA). After that, the converted data will be sent to the other side,which is the server side. At the same time, we also need to checksum, if it is correct, then we need to check sequence number. In other words, the sequence number in the server side should be previous client number plus the length of data minus one. After checking it correctly, then we can conitnue to transfer data to appliaation layer.   
+     * Application Layer Start Transmitting:
+
+       When Application layer transmits serialized data to lower PEEP layer, we defined PEEPTransport to split the data into several chunks if the length of data is larger than the max size. 
+     
+    * transmitting between PEEPs:
+     
+      Then packet the chunks into PEEP packet with sequence number and send them to the receiver's PEEP layer in order. Then do the checksum to guarantee the integrity of the packet. After checksum, compare the sequence number of received packets with previously stored ones. If they are the same, the receiver's PEEP layer updates the previously stored sequence number and compare the updated one with the next coming sequence number  of the packet from the sender. If the packets are not sent in order, the receiver's PEEP layer defines a structure to store the packets sent in a wrong order and later check them.  
+      
+    
+     
