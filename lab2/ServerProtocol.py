@@ -53,11 +53,6 @@ class ServerProtocol(StackingProtocol):
                     elif pkt.Type == PEEPPacket.TYPE_ACK:
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
-<<<<<<< HEAD
-=======
-                        self.clientSeqNum = pkt.SequenceNumber + 1
-
->>>>>>> 484597b8f514d1cc0a47f5a4630312960a9253bf
                         if self.state == ServerProtocol.STATE_SERVER_SYN:
                             self.clientSeqNum = pkt.SequenceNumber + 1
                             self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
