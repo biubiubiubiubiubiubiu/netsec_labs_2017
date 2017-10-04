@@ -41,7 +41,7 @@
 
        When Application layer transmits serialized data to lower PEEP layer, we defined PEEPTransport to split the data into several chunks if the length of data is larger than the max size. 
      
-    * transmitting between PEEPs:
+    * Transmitting between PEEPs:
      
       Then packet the chunks into PEEP packet with sequence number and send them to the receiver's PEEP layer in order. Then do the checksum to guarantee the integrity of the packet. After checksum, compare the sequence number of received packets with previously stored ones. If they are the same, the receiver's PEEP layer updates the previously stored sequence number and compare the updated one with the next coming sequence number  of the packet from the sender. If the packets are not sent in order, the receiver's PEEP layer defines a structure to store the packets sent in a wrong order and later check them.  
       
