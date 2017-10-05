@@ -39,7 +39,7 @@ if __name__ == "__main__":
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
-    loop.set_debug(enabled=True)
+    # loop.set_debug(enabled=True)
     f_server = StackingProtocolFactory(lambda: PassThroughLayer1(), lambda: ServerProtocol(loop))
     f_client = StackingProtocolFactory(lambda: PassThroughLayer2(), lambda: ClientProtocol(loop))
     ptConnector_server = playground.Connector(protocolStack=f_server)

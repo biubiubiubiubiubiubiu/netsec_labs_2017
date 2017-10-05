@@ -48,19 +48,24 @@ class ClientProtocol(StackingProtocol):
                     if (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_SYN_ACK,
                             ClientProtocol.STATE_CLIENT_SYN_ACK):
-                        print("Received SYN-ACK packet with sequence number " +
-                              str(pkt.SequenceNumber))
-                        self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
-                        self.serverSeqNum = pkt.SequenceNumber + 1
-                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
-                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ClientProtocol.STATE_DESC[self.state])
-                        self.transport.write(ackPacket.__serialize__())
-                        # if self.callback:
-                        #     self.callback(
-                        #         self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
-                        higherTransport = PEEPTransport(self.transport, self)
-                        self.higherProtocol().connection_made(higherTransport)
+                        # check ack num
+                        if (pkt.Acknowledgement - 1 == self.seqNum):
+                            print("Received SYN-ACK packet with sequence number " +
+                                  str(pkt.SequenceNumber))
+                            self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
+                            self.serverSeqNum = pkt.SequenceNumber + 1
+                            ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                            print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                                  ", current state " + ClientProtocol.STATE_DESC[self.state])
+                            self.transport.write(ackPacket.__serialize__())
+                            # if self.callback:
+                            #     self.callback(
+                            #         self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
+                            higherTransport = PEEPTransport(self.transport, self)
+                            self.higherProtocol().connection_made(higherTransport)
+                        else:
+                            print("Client: Wrong SYN_ACK packet: ACK number: {!r}, expected: {!r}".format(
+                                pkt.Acknowledgement - 1, self.seqNum))
 
                     elif (pkt.Type, self.state, pkt.SequenceNumber) == (
                             PEEPPacket.TYPE_ACK,
