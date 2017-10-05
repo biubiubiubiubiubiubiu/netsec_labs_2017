@@ -4,7 +4,7 @@ Lab works for network security 2017
 ## For Lab2: 
 ### Test Instructions
 
-For **detailed WriteUp information**, please checkout the file WriteUp.md inside lab2_modular directory.
+**NOTE:** For **detailed WriteUp information**, please checkout the file WriteUp.md inside lab2_modular directory.
 
 This is a modular version of our Lab2 protocol. The .playground folder includes our connector code and is pre-initialized with a network switch (switch1) at 20174.1.1.1 and a vnic (v_eth0).
 
