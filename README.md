@@ -57,7 +57,7 @@ class PEEPPacket(PacketType):
 
 ### State Machine List
 
-#### Client Machine
+#### Client State
 Initial SYN State (state 0)
 - prepare checksum for header fields
 - Client sends SYN packet (Type=0) to server, transitions to state 1 where it waits for SYN-ACK (Type=1) packet
@@ -71,18 +71,22 @@ SYN-ACK State (state 1)
 Transmission State (state 2)
 - Client can now send Data packets (haven't defined yet)
  
-Server Protocol
+#### Server State
 SYN-ACK State (State 0)
-- server awaits SYN packet from client and when it receives it, it computes checksum and if correct, transmits SYN-ACK (Type=1) packet, transition to SYN State (state 1)
+- server awaits SYN packet from client and when it receives the packet, it computes checksum and if correct, transmits SYN-ACK (Type=1) packet to the server, and the state transmitted to SYN State (state 1)
 - if checksum is bad or not received packet then terminate handshake with RST packet and clear buffer.
  
 SYN State (state 1)
-- server awaits client's ACK (Type = 2) packet, when received and on correct checksum calculation transition to Transmission State (state 2)
+- server awaits client's ACK (Type = 2) packet, when received and checksum calculation is correct, the state is transmitted to Transmission State (state 2)
 - If not received or checksum is bad, terminate handshake with RST packet and clear buffer.
  
 Transmission State (State 2)
 - Server can now send data packets to client.
 
 #### Checking with seqNum:
-- when the type is TYPE_DATA, then we need to check the difference between it's sequence number and stored sequence number (clientSeqNum or serverSeqNum) is the size of data bytes minus 1.
-- When the packet is not the initial one, we need to check whether it's sequence number matches with stored sequence number.
+- When data transmission starts, checksum is implemented in the PEEP layer
+- After checksum, we need to check the difference between it's sequence number and stored sequence number received before (clientSeqNum or serverSeqNum) 
+    
+    * If the sequence numbers match, keep trasnmitting the packet up to the application layer
+
+    * If not, restore the packet with incorrect sequence number and check it later
