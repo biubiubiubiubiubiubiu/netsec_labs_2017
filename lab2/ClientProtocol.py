@@ -12,8 +12,6 @@ class ClientProtocol(StackingProtocol):
         2: "TRANSMISSION"
     }
 
-    MAXBYTE = 20
-
     STATE_CLIENT_INITIAL_SYN = 0
     STATE_CLIENT_SYN_ACK = 1
     STATE_CLIENT_TRANSMISSION = 2
