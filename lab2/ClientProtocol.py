@@ -38,29 +38,34 @@ class ClientProtocol(StackingProtocol):
                   ", current state " + ClientProtocol.STATE_DESC[self.state])
             print("Packet checksum: " + str(synPacket.Checksum))
             self.transport.write(synPacket.__serialize__())
+            self.state = ClientProtocol.STATE_CLIENT_SYN_ACK
 
     def data_received(self, data):
         self.deserializer.update(data)
         for pkt in self.deserializer.nextPackets():
             if isinstance(pkt, PEEPPacket):
                 if pkt.verifyChecksum():
-                    if pkt.Type == PEEPPacket.TYPE_SYN_ACK:
-                        print("Received SYN-ACK packet with sequence number " +
-                              str(pkt.SequenceNumber))
-                        self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
-                        # self.seqNum += 1
-                        self.serverSeqNum = pkt.SequenceNumber + 1
-                        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
-                        print("Sending ACK packet with sequence number " + str(self.seqNum) +
-                              ", current state " + ClientProtocol.STATE_DESC[self.state])
-                        self.transport.write(ackPacket.__serialize__())
-                        if self.callback:
-                            self.callback(
-                                self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
-                        higherTransport = PEEPTransport(self.transport, self)
-                        self.higherProtocol().connection_made(higherTransport)
+                    if pkt.Type == PEEPPacket.TYPE_SYN_ACK and self.state == ClientProtocol.STATE_CLIENT_SYN_ACK:
+                        # check ack num
+                        if (pkt.Acknowledgement - 1 == self.seqNum):
+                            print("Received SYN-ACK packet with sequence number " +
+                                str(pkt.SequenceNumber))
+                            self.state = ClientProtocol.STATE_CLIENT_TRANSMISSION
+                            # self.seqNum += 1
+                            self.serverSeqNum = pkt.SequenceNumber + 1
+                            ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.serverSeqNum)
+                            print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                                ", current state " + ClientProtocol.STATE_DESC[self.state])
+                            self.transport.write(ackPacket.__serialize__())
+                            if self.callback:
+                                self.callback(
+                                    self, {"type": PEEPPacket.TYPE_SYN_ACK, "state": self.state})
+                            higherTransport = PEEPTransport(self.transport, self)
+                            self.higherProtocol().connection_made(higherTransport)
+                        else:
+                            print("Client: Wrong SYN_ACK packet: ACK number: {!r}, expected: {!r}".format(pkt.Acknowledgement - 1, self.seqNum))
 
-                    elif pkt.Type == PEEPPacket.TYPE_ACK:
+                    elif pkt.Type == PEEPPacket.TYPE_ACK and self.state == ClientProtocol.STATE_CLIENT_TRANSMISSION:
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
                         dataRemoveSeq = pkt.Acknowledgement - 1
@@ -69,7 +74,7 @@ class ClientProtocol(StackingProtocol):
                             del self.sentDataCache[dataRemoveSeq]
                         self.serverSeqNum = pkt.SequenceNumber + 1
 
-                    elif pkt.Type == PEEPPacket.TYPE_DATA:
+                    elif pkt.Type == PEEPPacket.TYPE_DATA and self.state == ClientProtocol.STATE_CLIENT_TRANSMISSION:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
                         if pkt.SequenceNumber - self.serverSeqNum <= PEEPTransport.MAXBYTE:

@@ -7,6 +7,7 @@ from PEEPTransports.PEEPTransport import PEEPTransport
 class ServerProtocol(StackingProtocol):
     STATE_DESC = {
         0: "SYN_ACK",
+        0.5: "STATE_SERVER_WAITING_ACK",
         1: "SYN",
         2: "TRANSMISSION"
     }
@@ -37,7 +38,8 @@ class ServerProtocol(StackingProtocol):
         for pkt in self.deserializer.nextPackets():
             if isinstance(pkt, PEEPPacket):
                 if pkt.verifyChecksum():
-                    if pkt.Type == PEEPPacket.TYPE_SYN:
+                    if pkt.Type == PEEPPacket.TYPE_SYN and self.state == ServerProtocol.STATE_SERVER_SYN_ACK:
+                        # the first way handshake, no need to check the sequence num
                         print("Received SYN packet with sequence number " +
                               str(pkt.SequenceNumber))
                         self.state = ServerProtocol.STATE_SERVER_SYN
@@ -48,22 +50,27 @@ class ServerProtocol(StackingProtocol):
                               ", current state " + ServerProtocol.STATE_DESC[self.state])
                         self.transport.write(synAckPacket.__serialize__())
 
-                    elif pkt.Type == PEEPPacket.TYPE_ACK:
-                        print("Received ACK packet with sequence number " +
-                              str(pkt.SequenceNumber))
-                        if self.state == ServerProtocol.STATE_SERVER_SYN:
-                            self.clientSeqNum = pkt.SequenceNumber + 1
-                            self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
-                            higherTransport = PEEPTransport(self.transport, self)
-                            self.higherProtocol().connection_made(higherTransport)
-                        elif self.STATE_DESC[self.state] == "TRANSMISSION":
-                            dataRemoveSeq = pkt.Acknowledgement - 1
-                            if dataRemoveSeq in self.sentDataCache:
-                                print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
-                                del self.sentDataCache[dataRemoveSeq]
-                            self.clientSeqNum = pkt.SequenceNumber + 1
+                    elif pkt.Type == PEEPPacket.TYPE_ACK and (self.state == ServerProtocol.STATE_SERVER_SYN or self.state == ServerProtocol.STATE_SERVER_TRANSMISSION):
+                        if pkt.Acknowledgement - 1 == self.seqNum:
+                            print("Received ACK packet with sequence number " +
+                                str(pkt.SequenceNumber))
+                            if self.state == ServerProtocol.STATE_SERVER_SYN:
+                                self.clientSeqNum = pkt.SequenceNumber + 1
+                                self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
+                                higherTransport = PEEPTransport(self.transport, self)
+                                self.higherProtocol().connection_made(higherTransport)
+                            elif self.STATE_DESC[self.state] == "TRANSMISSION":
+                                dataRemoveSeq = pkt.Acknowledgement - 1
+                                if dataRemoveSeq in self.sentDataCache:
+                                    print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
+                                    del self.sentDataCache[dataRemoveSeq]
+                                self.clientSeqNum = pkt.SequenceNumber + 1
+                            else:
+                                print("Server: wrong packet received in TYPE_ACK")
+                        else:
+                            print("Server: Wrong ACK packet: ACK number: {!r}, expected: {!r}".format(pkt.Acknowledgement - 1, self.seqNum))
 
-                    elif pkt.Type == PEEPPacket.TYPE_DATA:
+                    elif pkt.Type == PEEPPacket.TYPE_DATA and self.state == ServerProtocol.STATE_SERVER_TRANSMISSION:
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
                         if pkt.SequenceNumber - self.clientSeqNum <= PEEPTransport.MAXBYTE:
