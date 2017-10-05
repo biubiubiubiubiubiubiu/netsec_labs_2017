@@ -37,7 +37,9 @@ class ServerProtocol(StackingProtocol):
         for pkt in self.deserializer.nextPackets():
             if isinstance(pkt, PEEPPacket):
                 if pkt.verifyChecksum():
-                    if pkt.Type == PEEPPacket.TYPE_SYN:
+                    if (pkt.Type, self.state) == (
+                            PEEPPacket.TYPE_SYN,
+                            ServerProtocol.STATE_SERVER_SYN_ACK):
                         print("Received SYN packet with sequence number " +
                               str(pkt.SequenceNumber))
                         self.state = ServerProtocol.STATE_SERVER_SYN
@@ -48,7 +50,9 @@ class ServerProtocol(StackingProtocol):
                               ", current state " + ServerProtocol.STATE_DESC[self.state])
                         self.transport.write(synAckPacket.__serialize__())
 
-                    elif pkt.Type == PEEPPacket.TYPE_ACK:
+                    elif (pkt.Type, pkt.SequenceNumber) == (
+                            PEEPPacket.TYPE_ACK,
+                            self.clientSeqNum):
                         print("Received ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
                         if self.state == ServerProtocol.STATE_SERVER_SYN:
@@ -56,14 +60,17 @@ class ServerProtocol(StackingProtocol):
                             self.state = ServerProtocol.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
-                        elif self.STATE_DESC[self.state] == "TRANSMISSION":
+                        elif self.state == ServerProtocol.STATE_SERVER_TRANSMISSION:
                             dataRemoveSeq = pkt.Acknowledgement - 1
                             if dataRemoveSeq in self.sentDataCache:
                                 print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
                                 del self.sentDataCache[dataRemoveSeq]
                             self.clientSeqNum = pkt.SequenceNumber + 1
 
-                    elif pkt.Type == PEEPPacket.TYPE_DATA:
+
+                    elif (pkt.Type, self.state) == (
+                            PEEPPacket.TYPE_DATA,
+                            ServerProtocol.STATE_SERVER_TRANSMISSION):
                         print("Received DATA packet with sequence number " +
                               str(pkt.SequenceNumber))
                         if pkt.SequenceNumber - self.clientSeqNum <= PEEPTransport.MAXBYTE:
@@ -87,35 +94,38 @@ class ServerProtocol(StackingProtocol):
 
                         # self.transport.write(ackPacket.__serialize__())
 
-                    elif pkt.Type == PEEPPacket.TYPE_RIP:
+
+                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                            PEEPPacket.TYPE_RIP,
+                            ServerProtocol.STATE_SERVER_TRANSMISSION,
+                            self.clientSeqNum):
                         print("Received RIP packet with sequence number " +
                               str(pkt.SequenceNumber))
-                        # self.seqNum += 1
+                        self.clientSeqNum = pkt.SequenceNumber + 1
+                        ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+                        print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                            ", current state " + ServerProtocol.STATE_DESC[self.state])
+                        self.transport.write(ripAckPacket.__serialize__())
+                        # NOT IMPLEMENTED: send remaining packets in buffer
+                        self.sendRip()
 
-                        if(pkt.SequenceNumber == self.clientSeqNum):
-                            print("matched!")
-                            self.clientSeqNum = pkt.SequenceNumber + 1
-                            ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-                            print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
-                        		", current state " + ServerProtocol.STATE_DESC[self.state])
-                            self.transport.write(ripAckPacket.__serialize__())
-                            # NOT IMPLEMENTED: send remaining packets in buffer
-                            self.sendRip()
-                        else:
-                            print("Wrong packet seq num {!r}, pkt Type : {!r} ".format(str(pkt.SequenceNumber), str(pkt.Type)))
 
-                    elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
+                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                            PEEPPacket.TYPE_RIP_ACK,
+                            ServerProtocol.STATE_SERVER_TRANSMISSION,
+                            self.clientSeqNum):
                         print("Received RIP-ACK packet with sequence number " +
                               str(pkt.SequenceNumber))
                         print("Closing...")
                         self.stop()
 
                     else:
-                        print("Wrong packet type: {!r}, state: {!r} ".format(str(pkt.Type), str(self.state)))
+                        print("Server: Wrong packet: seq num {!r}, type {!r}， current state: {!r}".format(
+                            pkt.SequenceNumber, pkt.Type, ServerProtocol.STATE_DESC[self.state]))
                 else:
                     print("Wrong packet checksum: " + str(pkt.Checksum))
             else:
-                print("Wrong packet class type: {!r}, state: {!r} ".format(str(type(pkt)), str(self.state)))
+                print("Wrong packet class type: {!r}, state: {!r} ".format(str(type(pkt)), ServerProtocol.STATE_DESC[self.state]))
 
     def connection_lost(self, exc):
         print('The client closed the connection')
@@ -127,10 +137,10 @@ class ServerProtocol(StackingProtocol):
         return self.seqNum
 
     def stop(self):
+        print("Goodbye!")
         if self.transport:
             self.transport.close()
         if self.loop:
-            print("Goodbye!")
             self.loop.stop()
 
     def sendRip(self):
