@@ -1,59 +1,33 @@
 # netsec_labs_2017
 Lab works for network security 2017
 
+## For Lab2: 
+### Test Instructions
+This is a modular version of our Lab2 protocol. The .playground folder includes our connector code and is pre-initialized with a network switch (switch1) at 20174.1.1.1 and a vnic (v_eth0).
 
-## PETF
+The following commands are used to initialize the environment:
 
-* Protocol Name
-	* Playground Control Protocol(PCP)
+```
+(cd lab2_modular)
+pnetworking initialize instance
+pnetworking enable switch1
+pnetworking enable v_eth0
+```
 
-### Ensuring data received
-* ACK NACK Message: Detect incidential damage but not the intended change
-	* ACK: e.g: I have received the packet
-	* NACK: e.g: I have not received the packet
-	* CRC: e.g: Packet is damaged
-* Forward Error Connection 前向纠错
+The submission includes an Echo client and server as example. Use
 
-* sliding window for acknowledgement
+```
+python3 submission.py server
+```
 
- 	e.g:   Sender: 1, 2, 3, 4, 5
- 			Receiver: received 1, S can send 6
-* Result: ACK / NONACK protocol
+to start the server and
 
-### Session Establishment
-* Three-way handshake.
-	* Client ---SYN---> Server
-	* Server ---(SYN-ACK)---> Client
-	* Client ---ACK---> Server
-	* Include sequence number inside each packet. So sending back ACK with server's generated sequence number means two ends are in same session
-	* Problem: 
-		* Session Hijack
-		* Session Flood 
-	* No PKI
+```
+python3 submission.py client 20174.1.1.1
+```
 
+to make a connection. Once connection_made is called, the client sends a "hello" message to server and receives the correspondent response. Several log messages will be printed at each step of connection.
 
-## Some Poll Results from Lecture:
+This submission enables data chunks. If the data bytes is longer than 1024 (a constant in PEEPTransports/PEEPTransport.py that can be modified), it is splitted into several chunks and sent separately to the server. The server will combine them in a cache and pass the completed bytes to application once finished.
 
-* 1st Poll: ACK NACK message receiving mechanism,
-* 2nd Poll: Session Establishment: Three-way Handshake
-* 3rd Poll: No PKI: (https://zh.wikipedia.org/wiki/%E5%85%AC%E9%96%8B%E9%87%91%E9%91%B0%E5%9F%BA%E7%A4%8E%E5%BB%BA%E8%A8%AD)
-* 4th Poll: A sliding window based packet receiving mechanism
-	e.g.: Assume the window size is 5. Sender firstly sends 5 packets, and waiting for message from receiver. If the sender has received ACK for 1st packet, then the sender can send 6th packet and so on.
-
-## Packet Definitions: SYN SYN-ACK ACK
-* SYN:
-	* IP 
-	* PORT
-	* SEQUENCE NUMBER
-	* SESSION ID (if reconnecting)
-* SYN - ACK
-	* IP 
-	* PORT
-	* SEQUENCE NUMBER
-	* EXPECTED SESSION ID (Changed if reconnected)
-* ACK
-	* SEQUENCE NUMBER
-* DATA
-	* CONTENT: Bytes
-	* SEQUENCE NUMBER
-
+For detailed WriteUp information, please checkout the file WriteUp.md inside lab2_modular directory.
