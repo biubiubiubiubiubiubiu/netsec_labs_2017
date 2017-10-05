@@ -72,7 +72,7 @@ class ServerProtocol(StackingProtocol):
                             if len(self.receivedDataCache) > 0:
                                 # Sort the list, if there is a matching sequence number inside the list, push it up
                                 self.receivedDataCache = sorted(self.receivedDataCache, key=lambda pkt: pkt.SequenceNumber)
-                                while (self.receivedDataCache[0].SequenceNumber - self.clientSeqNum <= PEEPTransport.MAXBYTE):    
+                                while (self.receivedDataCache[0].SequenceNumber - self.clientSeqNum <= PEEPTransport.MAXBYTE):
                                     self.processDataPkt(self.receivedDataCache.pop(0))
                         else:
                             # if the order of pkt is wrong, simply append it to cache
@@ -93,16 +93,16 @@ class ServerProtocol(StackingProtocol):
                         # self.seqNum += 1
 
                         if(pkt.SequenceNumber == self.clientSeqNum):
-                        	print("matched!")
-                        	self.clientSeqNum = pkt.SequenceNumber + 1
-                        	ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
-                        	print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
+                            print("matched!")
+                            self.clientSeqNum = pkt.SequenceNumber + 1
+                            ripAckPacket = PEEPPacket.makeRipAckPacket(self.raisedSeqNum(), self.clientSeqNum)
+                            print("Sending RIP-ACK packet with sequence number " + str(self.seqNum) +
                         		", current state " + ServerProtocol.STATE_DESC[self.state])
-                        	self.transport.write(ripAckPacket.__serialize__())
-                        	# NOT IMPLEMENTED: send remaining packets in buffer
-                        	self.sendRip()
+                            self.transport.write(ripAckPacket.__serialize__())
+                            # NOT IMPLEMENTED: send remaining packets in buffer
+                            self.sendRip()
                         else:
-                        	print("Wrong packet seq num {!r}, pkt Type : {!r} ".format(str(pkt.SequenceNumber), str(pkt.Type)))
+                            print("Wrong packet seq num {!r}, pkt Type : {!r} ".format(str(pkt.SequenceNumber), str(pkt.Type)))
 
                     elif pkt.Type == PEEPPacket.TYPE_RIP_ACK:
                         print("Received RIP-ACK packet with sequence number " +
