@@ -1,9 +1,9 @@
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
 from ..PEEPPacket import PEEPPacket
-
+import time
 class PEEPTransport(StackingTransport):
 
-    MAXBYTE = 1024
+    MAXBYTE = 10
 
     def __init__(self, transport, protocol=None):
         super().__init__(transport)
@@ -23,10 +23,14 @@ class PEEPTransport(StackingTransport):
                     sentData = data[i:]
                 i += self.MAXBYTE
                 pkt = PEEPPacket.makeDataPacket(self.protocol.raisedSeqNum(len(sentData)), sentData)
-                self.protocol.sentDataCache[pkt.SequenceNumber] = sentData
-                print("sending {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
                 index += 1
-                super().write(pkt.__serialize__())
+                if index <= self.protocol.WINDOW_SIZE:
+                    print("sending {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                    self.protocol.sentDataCache[pkt.SequenceNumber] = (pkt, time.time())
+                    super().write(pkt.__serialize__())
+                else: 
+                    print("caching {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                    self.protocol.readyDataCache.append((pkt.SequenceNumber, pkt))
             print("PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(index))
         
         else:

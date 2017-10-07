@@ -85,7 +85,7 @@ class EchoClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         print("Connected to {}".format(transport.get_extra_info("peername")))
         self.transport = transport
-        self.send("hello")
+        self.send("hello I am the test meesage")
         
     def data_received(self, data):
         self.deserializer.update(data)
