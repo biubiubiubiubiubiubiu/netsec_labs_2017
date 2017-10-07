@@ -15,6 +15,8 @@ class ServerProtocol(StackingProtocol):
     STATE_SERVER_SYN = 1
     STATE_SERVER_TRANSMISSION = 2
 
+    WINDOW_SIZE = 4
+    
     def __init__(self, loop=None, callback=None):
         super().__init__()
         print("Hello server")

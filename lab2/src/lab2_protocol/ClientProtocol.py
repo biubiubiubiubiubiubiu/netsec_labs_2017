@@ -15,7 +15,9 @@ class ClientProtocol(StackingProtocol):
     STATE_CLIENT_INITIAL_SYN = 0
     STATE_CLIENT_SYN_ACK = 1
     STATE_CLIENT_TRANSMISSION = 2
-
+    
+    WINDOW_SIZE = 4
+    
     def __init__(self, loop=None, callback=None):
         super().__init__()
         self.state = ClientProtocol.STATE_CLIENT_INITIAL_SYN
@@ -29,6 +31,7 @@ class ClientProtocol(StackingProtocol):
         self.callback = callback
         self.receivedDataCache = []
         self.sentDataCache = {}
+        self.readyDataCache = []
 
     def connection_made(self, transport):
         self.transport = transport
@@ -77,6 +80,11 @@ class ClientProtocol(StackingProtocol):
                         if dataRemoveSeq in self.sentDataCache:
                             print("Client: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
                             del self.sentDataCache[dataRemoveSeq]
+                            if len(self.readyDataCache) > 0:
+                                (sequenceNumber, dataPkt) = self.readyDataCache.pop(0)
+                                print("Client: Sending next packet in readyDataCache...")
+                                self.sentDataCache[sequenceNumber] = dataPkt
+                                self.transport.write(dataPkt.__serialize__())
                         self.serverSeqNum = pkt.SequenceNumber + 1
 
                     elif (pkt.Type, self.state) == (
