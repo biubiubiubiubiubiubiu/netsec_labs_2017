@@ -3,7 +3,6 @@ from .PEEPTransports.PEEPTransport import PEEPTransport
 from .PEEPProtocol import PEEPProtocol
 
 class ServerProtocol(PEEPProtocol):
-
     def __init__(self):
         super().__init__()
         self.state = self.STATE_SERVER_SYN_ACK
@@ -54,6 +53,11 @@ class ServerProtocol(PEEPProtocol):
                         if dataRemoveSeq in self.sentDataCache:
                             print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
                             del self.sentDataCache[dataRemoveSeq]
+                            if len(self.readyDataCache) > 0:
+                                (sequenceNumber, dataPkt) = self.readyDataCache.pop(0)
+                                print("Server: Sending next packet in readyDataCache...")
+                                self.sentDataCache[sequenceNumber] = dataPkt
+                                self.transport.write(dataPkt.__serialize__())
                         self.partnerSeqNum = pkt.SequenceNumber + 1
 
 
@@ -73,7 +77,7 @@ class ServerProtocol(PEEPProtocol):
                                            0].SequenceNumber - self.partnerSeqNum <= PEEPTransport.MAXBYTE):
                                     self.processDataPkt(self.receivedDataCache.pop(0))
                         elif pkt.SequenceNumber >= self.partnerSeqNum \
-                                and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPProtocol.MAXBYTE:
+                                and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPTransport.MAXBYTE:
                             # if the order of pkt is wrong, simply append it to cache
                             self.receivedDataCache.append(pkt)
                         else:

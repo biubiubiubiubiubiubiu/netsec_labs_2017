@@ -56,6 +56,11 @@ class ClientProtocol(PEEPProtocol):
                         if dataRemoveSeq in self.sentDataCache:
                             print("Client: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
                             del self.sentDataCache[dataRemoveSeq]
+                            if len(self.readyDataCache) > 0:
+                                (sequenceNumber, dataPkt) = self.readyDataCache.pop(0)
+                                print("Client: Sending next packet in readyDataCache...")
+                                self.sentDataCache[sequenceNumber] = dataPkt
+                                self.transport.write(dataPkt.__serialize__())
                         self.partnerSeqNum = pkt.SequenceNumber + 1
 
                     elif (pkt.Type, self.state) == (
@@ -72,7 +77,7 @@ class ClientProtocol(PEEPProtocol):
                                 while (self.receivedDataCache[0].SequenceNumber - self.partnerSeqNum <= PEEPTransport.MAXBYTE):
                                     self.processDataPkt(self.receivedDataCache.pop(0))
                         elif pkt.SequenceNumber >= self.partnerSeqNum \
-                             and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPProtocol.MAXBYTE:
+                             and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPTransport.MAXBYTE:
                             # if the order of pkt is wrong, simply append it to cache
                             self.receivedDataCache.append(pkt)
                         else:

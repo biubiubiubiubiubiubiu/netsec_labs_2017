@@ -5,7 +5,7 @@ from playground.network.common import StackingProtocol
 
 class PEEPProtocol(StackingProtocol):
     # Constants
-    WINDOW_SIZE = 10
+    WINDOW_SIZE = 4
     RECIPIENT_WINDOW_SIZE = 100
 
     # State definitions
@@ -38,6 +38,7 @@ class PEEPProtocol(StackingProtocol):
         self.partnerSeqNum = None
         self.receivedDataCache = []
         self.sentDataCache = {}
+        self.readyDataCache = []
         self.receivedAckCache = {}
         self.sentAckCache = {}
 
