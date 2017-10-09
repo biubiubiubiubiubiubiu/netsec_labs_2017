@@ -69,8 +69,8 @@ class PEEPProtocol(StackingProtocol):
 
     def processDataPkt(self, pkt):
         self.partnerSeqNum = pkt.SequenceNumber + 1
-        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.partnerSeqNum)
-        print("Sending ACK packet with sequence number " + str(self.seqNum) + ",ack number " + str(self.partnerSeqNum)+
+        ackPacket = PEEPPacket.makeAckPacket(self.partnerSeqNum)
+        print("Sending ACK packet with ack number " + str(self.partnerSeqNum)+
             ", current state " + self.STATE_DESC[self.state])
         self.transport.write(ackPacket.__serialize__())
         self.higherProtocol().data_received(pkt.Data)

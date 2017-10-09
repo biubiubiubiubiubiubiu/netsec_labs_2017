@@ -33,8 +33,8 @@ class ClientProtocol(PEEPProtocol):
                                   str(pkt.SequenceNumber))
                             self.state = self.STATE_CLIENT_TRANSMISSION
                             self.partnerSeqNum = pkt.SequenceNumber + 1
-                            ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.partnerSeqNum)
-                            print("Sending ACK packet with sequence number " + str(self.seqNum) +
+                            ackPacket = PEEPPacket.makeAckPacket(self.partnerSeqNum)
+                            print("Sending ACK packet with ack number " + str(self.partnerSeqNum) +
                                   ", current state " + self.STATE_DESC[self.state])
                             self.transport.write(ackPacket.__serialize__())
                             # if self.callback:
@@ -46,12 +46,11 @@ class ClientProtocol(PEEPProtocol):
                             print("Client: Wrong SYN_ACK packet: ACK number: {!r}, expected: {!r}".format(
                                 pkt.Acknowledgement - 1, self.seqNum))
 
-                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                    elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
-                            self.STATE_CLIENT_TRANSMISSION,
-                            self.partnerSeqNum):
-                        print("Received ACK packet with sequence number " +
-                              str(pkt.SequenceNumber))
+                            self.STATE_CLIENT_TRANSMISSION,):
+                        print("Received ACK packet with ack number " +
+                              str(pkt.Acknowledgement))
                         dataRemoveSeq = pkt.Acknowledgement - 1
                         if dataRemoveSeq in self.sentDataCache:
                             print("Client: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
@@ -61,7 +60,7 @@ class ClientProtocol(PEEPProtocol):
                                 print("Client: Sending next packet in readyDataCache...")
                                 self.sentDataCache[sequenceNumber] = dataPkt
                                 self.transport.write(dataPkt.__serialize__())
-                        self.partnerSeqNum = pkt.SequenceNumber + 1
+                        # self.partnerSeqNum = pkt.SequenceNumber + 1
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_DATA,

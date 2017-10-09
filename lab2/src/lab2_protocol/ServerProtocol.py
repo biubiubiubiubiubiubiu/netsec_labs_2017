@@ -28,14 +28,13 @@ class ServerProtocol(PEEPProtocol):
                               ", current state " + self.STATE_DESC[self.state])
                         self.transport.write(synAckPacket.__serialize__())
 
-                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                    elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
-                            self.STATE_SERVER_SYN,
-                            self.partnerSeqNum):
+                            self.STATE_SERVER_SYN,):
                         if pkt.Acknowledgement - 1 == self.seqNum:
                             print("Received ACK packet with sequence number " +
                                   str(pkt.SequenceNumber))
-                            self.partnerSeqNum = pkt.SequenceNumber + 1
+                            # self.partnerSeqNum = pkt.SequenceNumber + 1
                             self.state = self.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
@@ -43,12 +42,11 @@ class ServerProtocol(PEEPProtocol):
                             print("Server: Wrong ACK packet: ACK number: {!r}, expected: {!r}".format(
                                 pkt.Acknowledgement - 1, self.seqNum))
 
-                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                    elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
-                            self.STATE_SERVER_TRANSMISSION,
-                            self.partnerSeqNum):
-                        print("Received ACK packet with sequence number " +
-                              str(pkt.SequenceNumber))
+                            self.STATE_SERVER_TRANSMISSION):
+                        print("Received ACK packet with ack number " +
+                              str(pkt.Acknowledgement))
                         dataRemoveSeq = pkt.Acknowledgement - 1
                         if dataRemoveSeq in self.sentDataCache:
                             print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
@@ -58,7 +56,7 @@ class ServerProtocol(PEEPProtocol):
                                 print("Server: Sending next packet in readyDataCache...")
                                 self.sentDataCache[sequenceNumber] = dataPkt
                                 self.transport.write(dataPkt.__serialize__())
-                        self.partnerSeqNum = pkt.SequenceNumber + 1
+                        # self.partnerSeqNum = pkt.SequenceNumber + 1
 
 
                     elif (pkt.Type, self.state) == (
