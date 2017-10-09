@@ -22,15 +22,16 @@ class PEEPTransport(StackingTransport):
                 else:
                     sentData = data[i:]
                 i += self.MAXBYTE
-                pkt = PEEPPacket.makeDataPacket(self.protocol.raisedSeqNum(len(sentData)), sentData)
+                pkt = PEEPPacket.makeDataPacket(self.protocol.raisedSeqNum(self.MAXBYTE if index > 0 else 1), sentData)
                 index += 1
+                ackNumber = pkt.SequenceNumber + len(sentData)
                 if index <= self.protocol.WINDOW_SIZE:
                     print("sending {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
-                    self.protocol.sentDataCache[pkt.SequenceNumber] = (pkt, time.time())
+                    self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
                     super().write(pkt.__serialize__())
                 else: 
-                    print("caching {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
-                    self.protocol.readyDataCache.append((pkt.SequenceNumber, pkt))
+                    print("buffering {!r} packet, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                    self.protocol.sendingDataBuffer.append((ackNumber, pkt))
             print("PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(index))
         
         else:

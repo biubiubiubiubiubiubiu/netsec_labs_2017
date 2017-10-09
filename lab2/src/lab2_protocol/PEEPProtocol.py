@@ -36,11 +36,10 @@ class PEEPProtocol(StackingProtocol):
         self.deserializer = PacketType.Deserializer()
         self.seqNum = int.from_bytes(os.urandom(4), byteorder='big')
         self.partnerSeqNum = None
-        self.receivedDataCache = []
+
         self.sentDataCache = {}
-        self.readyDataCache = []
-        self.receivedAckCache = {}
-        self.sentAckCache = {}
+        self.sendingDataBuffer = []
+        self.receivedDataBuffer = {}
 
     def connection_made(self, transport):
         print("Connection made")
@@ -67,10 +66,43 @@ class PEEPProtocol(StackingProtocol):
               ", current state " + self.STATE_DESC[self.state])
         self.transport.write(ripPacket.__serialize__())
 
-    def processDataPkt(self, pkt):
-        self.partnerSeqNum = pkt.SequenceNumber + 1
-        ackPacket = PEEPPacket.makeAckPacket(self.raisedSeqNum(), self.partnerSeqNum)
-        print("Sending ACK packet with sequence number " + str(self.seqNum) + ",ack number " + str(self.partnerSeqNum)+
-            ", current state " + self.STATE_DESC[self.state])
-        self.transport.write(ackPacket.__serialize__())
-        self.higherProtocol().data_received(pkt.Data)
+    def processDataPkt(self, pkt, needAck=True):
+        if pkt.SequenceNumber == self.partnerSeqNum:
+            # If it is ordered, update self.partnerSeqNum and push it up
+            print("Received DATA packet with sequence number " +
+                  str(pkt.SequenceNumber))
+            self.partnerSeqNum = pkt.SequenceNumber + len(pkt.Data)
+            self.higherProtocol().data_received(pkt.Data)
+            # Recursively pop and process next packet in buffer if it exists
+            if self.partnerSeqNum in self.receivedDataBuffer:
+                self.processDataPkt(self.receivedDataBuffer.pop(self.partnerSeqNum), False)
+        elif pkt.SequenceNumber > self.partnerSeqNum:
+            # if the order of pkt is wrong, temporarily append it to buffer
+            print("Received DATA packet with higher sequence number " +
+                  str(pkt.SequenceNumber) + ", buffered.")
+            self.receivedDataBuffer[pkt.SequenceNumber] = pkt
+        else:
+            # wrong packet seqNum, discard
+            print("ERROR: Received DATA packet with lower sequence number " +
+                  str(pkt.SequenceNumber) + ", discarded.")
+
+        # send an ack anyway
+        if needAck:
+            acknowledgement = pkt.SequenceNumber + len(pkt.Data)
+            ackPacket = PEEPPacket.makeAckPacket(acknowledgement)
+            print("Sending ACK packet with acknowledgement " + str(acknowledgement) +
+                  ", current state " + self.STATE_DESC[self.state])
+            self.transport.write(ackPacket.__serialize__())
+
+    def processAckPkt(self, pkt):
+        print("Received ACK packet with acknowledgement number " +
+              str(pkt.Acknowledgement))
+        dataRemoveSeq = pkt.Acknowledgement
+        if dataRemoveSeq in self.sentDataCache:
+            print("Server: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
+            del self.sentDataCache[dataRemoveSeq]
+            if len(self.sendingDataBuffer) > 0:
+                (ackNumber, dataPkt) = self.sendingDataBuffer.pop(0)
+                print("Server: Sending next packet in readyDataCache...")
+                self.sentDataCache[ackNumber] = dataPkt
+                self.transport.write(dataPkt.__serialize__())
