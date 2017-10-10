@@ -78,7 +78,10 @@ class ClientProtocol(PEEPProtocol):
                         elif pkt.SequenceNumber >= self.partnerSeqNum \
                              and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPTransport.MAXBYTE:
                             # if the order of pkt is wrong, simply append it to cache
-                            self.receivedDataCache.append(pkt)
+                            if (pkt.SequenceNumber not in list(p.SequenceNumber for p in self.receivedDataCache)):
+                                self.receivedDataCache.append(pkt)
+                            else:
+                                print("Client: duplicate packet received.")
                         else:
                             # wrong packet seqNum, discard
                             print("Received DATA packet with wrong sequence number " +
