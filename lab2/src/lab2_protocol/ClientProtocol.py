@@ -34,7 +34,7 @@ class ClientProtocol(PEEPProtocol):
                             self.state = self.STATE_CLIENT_TRANSMISSION
                             self.partnerSeqNum = pkt.SequenceNumber + 1
                             ackPacket = PEEPPacket.makeAckPacket(self.partnerSeqNum)
-                            print("Sending ACK packet with ack number " + str(self.partnerSeqNum) +
+                            print("Sending ACK packet with sequence number " + str(self.seqNum) +
                                   ", current state " + self.STATE_DESC[self.state])
                             self.transport.write(ackPacket.__serialize__())
                             # if self.callback:
@@ -48,44 +48,13 @@ class ClientProtocol(PEEPProtocol):
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
-                            self.STATE_CLIENT_TRANSMISSION,):
-                        print("Received ACK packet with ack number " +
-                              str(pkt.Acknowledgement))
-                        dataRemoveSeq = pkt.Acknowledgement - 1
-                        if dataRemoveSeq in self.sentDataCache:
-                            print("Client: Received ACK for dataSeq: {!r}, removing".format(dataRemoveSeq))
-                            del self.sentDataCache[dataRemoveSeq]
-                            if len(self.readyDataCache) > 0:
-                                (sequenceNumber, dataPkt) = self.readyDataCache.pop(0)
-                                print("Client: Sending next packet in readyDataCache...")
-                                self.sentDataCache[sequenceNumber] = dataPkt
-                                self.transport.write(dataPkt.__serialize__())
-                        # self.partnerSeqNum = pkt.SequenceNumber + 1
+                            self.STATE_CLIENT_TRANSMISSION):
+                        self.processAckPkt(pkt)
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_DATA,
                             self.STATE_CLIENT_TRANSMISSION):
-                        print("Received DATA packet with sequence number " +
-                              str(pkt.SequenceNumber))
-                        if pkt.SequenceNumber - self.partnerSeqNum <= PEEPTransport.MAXBYTE:
-                            # If it is, send an ack on this packet, update self.partnerSeqNum, push it up
-                            self.processDataPkt(pkt)
-                            if len(self.receivedDataCache) > 0:
-                                # Sort the list, if there is a matching sequence number inside the list, push it up
-                                self.receivedDataCache = sorted(self.receivedDataCache, key=lambda pkt: pkt.SequenceNumber)
-                                while (self.receivedDataCache[0].SequenceNumber - self.partnerSeqNum <= PEEPTransport.MAXBYTE):
-                                    self.processDataPkt(self.receivedDataCache.pop(0))
-                        elif pkt.SequenceNumber >= self.partnerSeqNum \
-                             and pkt.SequenceNumber < self.partnerSeqNum + PEEPProtocol.RECIPIENT_WINDOW_SIZE * PEEPTransport.MAXBYTE:
-                            # if the order of pkt is wrong, simply append it to cache
-                            if (pkt.SequenceNumber not in list(p.SequenceNumber for p in self.receivedDataCache)):
-                                self.receivedDataCache.append(pkt)
-                            else:
-                                print("Client: duplicate packet received.")
-                        else:
-                            # wrong packet seqNum, discard
-                            print("Received DATA packet with wrong sequence number " +
-                                  str(pkt.SequenceNumber) + ", discard.")
+                        self.processDataPkt(pkt)
 
                     elif (pkt.Type, self.state, pkt.SequenceNumber) == (
                             PEEPPacket.TYPE_RIP,
