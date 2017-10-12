@@ -74,6 +74,7 @@ class PEEPProtocol(StackingProtocol):
             self.partnerSeqNum = pkt.SequenceNumber + len(pkt.Data)
             self.higherProtocol().data_received(pkt.Data)
             # Recursively pop and process next packet in buffer if it exists
+            # todo: change recursion into iteration
             if self.partnerSeqNum in self.receivedDataBuffer:
                 self.processDataPkt(self.receivedDataBuffer.pop(self.partnerSeqNum), False)
         elif pkt.SequenceNumber > self.partnerSeqNum:
