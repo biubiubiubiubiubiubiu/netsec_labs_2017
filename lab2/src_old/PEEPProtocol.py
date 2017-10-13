@@ -1,4 +1,4 @@
-from .PEEPPacket import PEEPPacket
+from PEEPPacket import PEEPPacket
 from playground.network.packet import PacketType
 import os
 from playground.network.common import StackingProtocol
@@ -12,7 +12,7 @@ class PEEPProtocol(StackingProtocol):
     RECIPIENT_WINDOW_SIZE = 100
     TIMEOUT = 3
     SCAN_INTERVAL = 0.1
-    DEBUG_MODE = False
+    DEBUG_MODE = True
 
     # State definitions
     STATE_DESC = {

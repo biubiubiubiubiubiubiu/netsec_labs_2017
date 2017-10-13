@@ -3,6 +3,7 @@ from playground.network.packet.fieldtypes import UINT16, STRING, UINT8, UINT32, 
 from playground.network.packet.fieldtypes.attributes import Optional
 import zlib
 
+
 class PEEPPacket(PacketType):
     TYPE_SYN = 0
     TYPE_SYN_ACK = 1
@@ -54,10 +55,9 @@ class PEEPPacket(PacketType):
         return pkt
 
     @classmethod
-    def makeAckPacket(cls, seq, ack):
+    def makeAckPacket(cls, ack):
         pkt = cls()
         pkt.Type = cls.TYPE_ACK
-        pkt.SequenceNumber = seq
         pkt.Acknowledgement = ack
         pkt.updateChecksum()
         return pkt
@@ -72,10 +72,9 @@ class PEEPPacket(PacketType):
         return pkt
 
     @classmethod
-    def makeRipAckPacket(cls, seq, ack):
+    def makeRipAckPacket(cls, ack):
         pkt = cls()
         pkt.Type = cls.TYPE_RIP_ACK
-        pkt.SequenceNumber = seq
         pkt.Acknowledgement = ack
         pkt.updateChecksum()
         return pkt

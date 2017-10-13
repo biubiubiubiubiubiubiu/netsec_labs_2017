@@ -2,8 +2,6 @@ from ClientProtocol import ClientProtocol
 from ServerProtocol import ServerProtocol
 
 from playground.network.common import StackingProtocol, StackingTransport, StackingProtocolFactory
-from PassThroughLayer1 import PassThroughLayer1
-from PassThroughLayer2 import PassThroughLayer2
 from ApplicationLayer import EchoClientProtocol, EchoServerProtocol, EchoControl
 import playground
 import logging
@@ -19,19 +17,19 @@ import asyncio, sys
 
 
 if __name__ == "__main__":
-    # logging.getLogger().setLevel(logging.NOTSET) # this logs *everything*
-    # logging.getLogger().addHandler(logging.StreamHandler()) # logs to stderr
+    logging.getLogger().setLevel(logging.NOTSET)  # this logs *everything*
+    logging.getLogger().addHandler(logging.StreamHandler())  # logs to stderr
     testArgs = {}
 
-    args= sys.argv[1:]
+    args = sys.argv[1:]
     i = 0
     for arg in args:
         if arg.startswith("-"):
-            k,v = arg.split("=")
-            testArgs[k]=v
+            k, v = arg.split("=")
+            testArgs[k] = v
         else:
             testArgs[i] = arg
-            i+=1
+            i += 1
     mode = ""
     remoteAddress = ""
     if len(testArgs) > 0:
@@ -39,25 +37,21 @@ if __name__ == "__main__":
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
-    # loop.set_debug(enabled=True)
-    f_server = StackingProtocolFactory(lambda: PassThroughLayer1(), lambda: ServerProtocol(loop))
-    f_client = StackingProtocolFactory(lambda: PassThroughLayer2(), lambda: ClientProtocol(loop))
-    ptConnector_server = playground.Connector(protocolStack=f_server)
-    ptConnector_client = playground.Connector(protocolStack=f_client)
-    playground.setConnector("server", ptConnector_server)
-    playground.setConnector("client", ptConnector_client)
+    loop.set_debug(enabled=True)
+    ptConnector = playground.Connector(protocolStack=(ClientProtocol, ServerProtocol))
+    playground.setConnector("test_connector", ptConnector)
 
     if mode.lower() == "server":
-        coro = playground.getConnector('server').create_playground_server(lambda: EchoServerProtocol(), 101)
+        coro = playground.getConnector('test_connector').create_playground_server(lambda: EchoServerProtocol(), 101)
         server = loop.run_until_complete(coro)
         print("Submission: Server started at {}".format(server.sockets[0].gethostname()))
         loop.run_forever()
         loop.close()
     elif mode.lower() == "client":
-        print("Submission: Testing three-way handshake...")
         control = EchoControl()
-        coro = playground.getConnector('client').create_playground_connection(control.buildProtocol, remoteAddress, 101)
+        coro = playground.getConnector('test_connector').create_playground_connection(control.buildProtocol,
+                                                                                      remoteAddress, 101)
         transport, protocol = loop.run_until_complete(coro)
-        print("Client Connected. Starting UI t:{}. p:{}".format(transport, protocol))
+        print("Submission: Client Connected. Starting UI t:{}. p:{}".format(transport, protocol))
         loop.run_forever()
         loop.close()
