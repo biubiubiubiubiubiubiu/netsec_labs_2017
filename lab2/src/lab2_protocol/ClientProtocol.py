@@ -1,7 +1,7 @@
 from .PEEPPacket import PEEPPacket
 from .PEEPTransports.PEEPTransport import PEEPTransport
 from .PEEPProtocol import PEEPProtocol
-from threading import Timer
+import asyncio
 
 
 class ClientProtocol(PEEPProtocol):
@@ -16,8 +16,8 @@ class ClientProtocol(PEEPProtocol):
         if self.state == self.STATE_CLIENT_INITIAL_SYN:
             self.sendSyn()
             self.state = self.STATE_CLIENT_SYN_ACK
-            Timer(self.TIMEOUT, self.checkState,
-                  [[self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSED], self.sendSyn]).start()
+            self.tasks.append(asyncio.ensure_future(
+                self.checkState([self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSED], self.sendSyn)))
 
     def data_received(self, data):
         self.deserializer.update(data)
@@ -37,7 +37,7 @@ class ClientProtocol(PEEPProtocol):
                                 self.seqNum += 1
                                 higherTransport = PEEPTransport(self.transport, self)
                                 self.higherProtocol().connection_made(higherTransport)
-                                Timer(self.SCAN_INTERVAL, self.scanCache).start()
+                                self.tasks.append(asyncio.ensure_future(self.scanCache()))
                             else:
                                 self.dbgPrint("Client: Wrong SYN_ACK packet: ACK number: {!r}, expected: {!r}".format(
                                     pkt.Acknowledgement, self.seqNum + 1))
@@ -63,7 +63,7 @@ class ClientProtocol(PEEPProtocol):
                                       str(pkt.SequenceNumber))
                         self.partnerSeqNum = pkt.SequenceNumber + 1
                         # send rip ack and stop after cache is empty
-                        Timer(self.SCAN_INTERVAL, self.checkCacheIsEmpty, [self.ripAckAndStop]).start()
+                        self.tasks.append(asyncio.ensure_future(self.checkCacheIsEmpty(self.ripAckAndStop)))
 
                     elif (pkt.Type, self.state, pkt.Acknowledgement) == (
                             PEEPPacket.TYPE_RIP_ACK,
@@ -71,11 +71,11 @@ class ClientProtocol(PEEPProtocol):
                             self.seqNum + 1):
                         self.dbgPrint("Received RIP-ACK packet with ack number " +
                                       str(pkt.Acknowledgement))
-                        # TODO what to o after client receiving RIP-ACK?
+                        # TODO what to do after client receiving RIP-ACK?
                         # self.state = self.STATE_CLIENT_CLOSED
                     else:
                         self.dbgPrint("Client: Wrong packet: seq num {!r}, type {!r}， current state: {!r}".format(
-                            pkt.SequenceNumber, pkt.Type, self.STATE_DESC[self.state]))
+                            pkt.SequenceNumber, PEEPPacket.TYPE_DESC[pkt.Type], self.STATE_DESC[self.state]))
                 else:
                     self.dbgPrint("Wrong packet checksum: " + str(pkt.Checksum))
             else:
@@ -83,15 +83,15 @@ class ClientProtocol(PEEPProtocol):
                                                                                    self.STATE_DESC[self.state]))
 
     def prepareForRip(self):
+        self.dbgPrint("Client: preparing for RIP...")
         self.sendRip()
-        Timer(self.TIMEOUT, self.checkState, [[self.STATE_CLIENT_CLOSED], self.sendRip]).start()
+        self.tasks.append(asyncio.ensure_future(self.checkState([self.STATE_CLIENT_CLOSED], self.sendRip)))
 
     def ripAckAndStop(self):
         self.sendRipAck()
         self.dbgPrint("Closing...")
         self.state = self.STATE_CLIENT_CLOSED
-        # TODO: how to call transport.close() in a timer?
-        # self.stop()
+        self.stop()
 
     def isClosed(self):
         return self.state == self.STATE_CLIENT_CLOSED

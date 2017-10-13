@@ -4,6 +4,7 @@ import os
 from playground.network.common import StackingProtocol
 from threading import Timer
 import time
+import asyncio
 
 
 class PEEPProtocol(StackingProtocol):
@@ -12,7 +13,7 @@ class PEEPProtocol(StackingProtocol):
     RECIPIENT_WINDOW_SIZE = 100
     TIMEOUT = 3
     SCAN_INTERVAL = 0.1
-    DEBUG_MODE = False
+    DEBUG_MODE = True
 
     # State definitions
     STATE_DESC = {
@@ -41,13 +42,13 @@ class PEEPProtocol(StackingProtocol):
     STATE_CLIENT_SYN_ACK = 201
     STATE_CLIENT_TRANSMISSION = 202
     # STATE_CLIENT_CLOSING = 203
-    STATE_CLIENT_CLOSED = 203
+    STATE_CLIENT_CLOSED = 204
 
     def __init__(self):
         super().__init__()
         self.state = self.STATE_DEFAULT
         self.transport = None
-        self.deserializer = PacketType.Deserializer()
+        self.deserializer = PEEPPacket.Deserializer()
         self.seqNum = int.from_bytes(os.urandom(4), byteorder='big')
         self.partnerSeqNum = None
 
@@ -58,14 +59,16 @@ class PEEPProtocol(StackingProtocol):
         # TODO: temporary solution?
         self.isClosing = False
 
+        self.tasks = []
+
     def connection_made(self, transport):
         self.dbgPrint("Connection made")
         self.transport = transport
 
     def connection_lost(self, exc):
-        print('The partner closed the connection')
+        self.dbgPrint("PEEPProtocol: Connection closed")
         self.transport = None
-        self.higherProtocol().connection_lost(exc)
+        asyncio.gather(*self.tasks).add_done_callback(lambda res: self.higherProtocol().connection_lost(exc))
 
     def dbgPrint(self, text):
         if self.DEBUG_MODE:
@@ -155,30 +158,30 @@ class PEEPProtocol(StackingProtocol):
                     self.sentDataCache[ackNumber][0].SequenceNumber))
                 del self.sentDataCache[ackNumber]
 
-    def checkState(self, states, callback):
-        if self.state not in states:
-            self.dbgPrint("Timeout on state " + self.STATE_DESC[self.state] +
-                          ", expected " + str([self.STATE_DESC[state] for state in states]))
-            callback()
-            Timer(self.TIMEOUT, self.checkState, [states, callback]).start()
+    async def checkState(self, states, callback):
+        while self.state not in states:
+            await asyncio.sleep(self.TIMEOUT)
+            if self.state not in states:
+                self.dbgPrint("Timeout on state " + self.STATE_DESC[self.state] +
+                              ", expected " + str([self.STATE_DESC[state] for state in states]))
+                callback()
 
-    def scanCache(self):
-        for ackNumber in self.sentDataCache:
-            (dataPkt, timestamp) = self.sentDataCache[ackNumber]
-            currentTime = time.time()
-            if currentTime - timestamp >= self.TIMEOUT:
-                # resend data packet after timeout
-                self.dbgPrint("Sending packet " + str(dataPkt.SequenceNumber) + " in cache...")
-                self.transport.write(dataPkt.__serialize__())
-                self.sentDataCache[ackNumber] = (dataPkt, currentTime)
-        if not self.isClosed():
-            Timer(self.SCAN_INTERVAL, self.scanCache).start()
+    async def scanCache(self):
+        while not self.isClosed():
+            for ackNumber in self.sentDataCache:
+                (dataPkt, timestamp) = self.sentDataCache[ackNumber]
+                currentTime = time.time()
+                if currentTime - timestamp >= self.TIMEOUT:
+                    # resend data packet after timeout
+                    self.dbgPrint("Sending packet " + str(dataPkt.SequenceNumber) + " in cache...")
+                    self.transport.write(dataPkt.__serialize__())
+                    self.sentDataCache[ackNumber] = (dataPkt, currentTime)
+            await asyncio.sleep(self.SCAN_INTERVAL)
 
-    def checkCacheIsEmpty(self, callback):
-        if not self.sentDataCache:
-            callback()
-        else:
-            Timer(self.SCAN_INTERVAL, self.checkCacheIsEmpty, [callback]).start()
+    async def checkCacheIsEmpty(self, callback):
+        while self.sentDataCache:
+            await asyncio.sleep(self.SCAN_INTERVAL)
+        callback()
 
     def prepareForRip(self):
         raise NotImplementedError("PEEPProtocol: prepareForRip() not implemented")

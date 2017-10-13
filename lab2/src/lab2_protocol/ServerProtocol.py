@@ -2,6 +2,7 @@ from .PEEPPacket import PEEPPacket
 from .PEEPTransports.PEEPTransport import PEEPTransport
 from .PEEPProtocol import PEEPProtocol
 from threading import Timer
+import asyncio
 
 
 class ServerProtocol(PEEPProtocol):
@@ -26,8 +27,9 @@ class ServerProtocol(PEEPProtocol):
                         self.partnerSeqNum = pkt.SequenceNumber + 1
                         self.sendSynAck()
                         self.seqNum += 1
-                        Timer(self.TIMEOUT, self.checkState,
-                              [[self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSED], self.sendSynAck]).start()
+                        self.tasks.append(asyncio.ensure_future(
+                            self.checkState([self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSED],
+                                            self.sendSynAck)))
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
@@ -39,7 +41,7 @@ class ServerProtocol(PEEPProtocol):
                             self.state = self.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
-                            Timer(self.SCAN_INTERVAL, self.scanCache).start()
+                            self.tasks.append(asyncio.ensure_future(self.scanCache()))
                         else:
                             self.dbgPrint("Server: Wrong ACK packet: ACK number: {!r}, expected: {!r}".format(
                                 pkt.Acknowledgement, self.seqNum))
@@ -65,7 +67,7 @@ class ServerProtocol(PEEPProtocol):
                         self.sendRipAck()
                         # send rip after no remaining packets in buffer
                         self.isClosing = True
-                        Timer(self.SCAN_INTERVAL, self.checkCacheIsEmpty, [self.prepareForRip]).start()
+                        self.tasks.append(asyncio.ensure_future(self.checkCacheIsEmpty(self.prepareForRip)))
 
                     elif (pkt.Type, self.state, pkt.Acknowledgement) == (
                             PEEPPacket.TYPE_RIP_ACK,
@@ -87,8 +89,9 @@ class ServerProtocol(PEEPProtocol):
                                                                                    self.STATE_DESC[self.state]))
 
     def prepareForRip(self):
+        self.dbgPrint("Server: preparing for RIP...")
         self.sendRip()
-        Timer(self.TIMEOUT, self.checkState, [[self.STATE_SERVER_CLOSED], self.sendRip]).start()
+        self.tasks.append(asyncio.ensure_future(self.checkState([self.STATE_SERVER_CLOSED], self.sendRip)))
 
     def isClosed(self):
         return self.state == self.STATE_SERVER_CLOSED

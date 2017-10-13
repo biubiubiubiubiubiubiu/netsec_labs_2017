@@ -37,8 +37,9 @@ class EchoServerProtocol(asyncio.Protocol):
     an EchoProtocolMessage and sends back a response
     """
 
-    def __init__(self):
+    def __init__(self, loop=None):
         self.deserializer = EchoPacket.Deserializer()
+        self.loop = loop
         self.transport = None
 
     def connection_made(self, transport):
@@ -47,6 +48,8 @@ class EchoServerProtocol(asyncio.Protocol):
 
     def connection_lost(self, reason=None):
         print("Lost connection to client. Cleaning up.")
+        if self.loop:
+            self.loop.stop()
 
     def data_received(self, data):
         self.deserializer.update(data)
@@ -75,8 +78,9 @@ class EchoClientProtocol(asyncio.Protocol):
     for sending a message. When it receives a response, it prints it out.
     """
 
-    def __init__(self, callback=None):
+    def __init__(self, loop=None, callback=None):
         self.buffer = ""
+        self.loop = loop
         if callback:
             self.callback = callback
         else:
@@ -100,6 +104,11 @@ class EchoClientProtocol(asyncio.Protocol):
             else:
                 print("Got a message from server marked as original. Dropping.")
 
+    def connection_lost(self, reason=None):
+        print("Lost connection to server. Cleaning up.")
+        if self.loop:
+            self.loop.stop()
+
     def send(self, data):
         print("EchoClientProtocol: Sending echo message...")
         echoPacket = EchoPacket(original=True, message=data)
@@ -108,11 +117,12 @@ class EchoClientProtocol(asyncio.Protocol):
 
 
 class EchoControl:
-    def __init__(self):
+    def __init__(self, loop=None):
         self.txProtocol = None
+        self.loop = loop
 
     def buildProtocol(self):
-        self.txProtocol = EchoClientProtocol(self.callback)
+        self.txProtocol = EchoClientProtocol(self.loop, self.callback)
         return self.txProtocol
 
     def connect(self, txProtocol):
@@ -125,7 +135,8 @@ class EchoControl:
 
     def callback(self, message):
         print("Server Response: {}".format(message))
-        self.txProtocol.send("__QUIT__")
+        # self.txProtocol.send("__QUIT__")
+        self.txProtocol.transport.close()
 
     def stdinAlert(self):
         data = sys.stdin.readline()

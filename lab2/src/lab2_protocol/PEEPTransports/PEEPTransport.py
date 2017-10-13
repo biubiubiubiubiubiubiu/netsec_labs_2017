@@ -1,7 +1,7 @@
 from playground.network.common import StackingTransport
 from ..PEEPPacket import PEEPPacket
 import time
-from threading import Timer
+import asyncio
 
 
 class PEEPTransport(StackingTransport):
@@ -14,7 +14,7 @@ class PEEPTransport(StackingTransport):
     def write(self, data):
         if self.protocol:
             if not self.protocol.isClosing:
-                print("PEEPTransport: Write got {} bytes of data to package".format(len(data)))
+                self.protocol.dbgPrint("PEEPTransport: Write got {} bytes of data to package".format(len(data)))
                 # Create data chunks
                 i = 0
                 index = 0
@@ -29,23 +29,27 @@ class PEEPTransport(StackingTransport):
                     index += 1
                     ackNumber = self.protocol.seqNum + len(sentData)
                     if index <= self.protocol.WINDOW_SIZE:
-                        print("sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                        self.protocol.dbgPrint(
+                            "sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
                         self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
                         super().write(pkt.__serialize__())
                     else:
-                        print("buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                        self.protocol.dbgPrint(
+                            "buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
                         self.protocol.sendingDataBuffer.append((ackNumber, pkt))
                     self.protocol.seqNum += len(sentData)
-                print("PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(index))
+                self.protocol.dbgPrint(
+                    "PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(index))
             else:
-                print("PEEPTransport: protocol is closing, unable to write anymore.")
+                self.protocol.dbgPrint("PEEPTransport: protocol is closing, unable to write anymore.")
 
         else:
-            print("PEEPTransport: Undefined protocol, writing anyway...")
-            print("PEEPTransport: Write got {} bytes of data to pass to lower layer".format(len(data)))
+            self.protocol.dbgPrint("PEEPTransport: Undefined protocol, writing anyway...")
+            self.protocol.dbgPrint("PEEPTransport: Write got {} bytes of data to pass to lower layer".format(len(data)))
             super().write(data)
 
     def close(self):
         # clear buffer then send RIP
+        self.protocol.dbgPrint("PEEPTransport: Transport closing...")
         self.protocol.isClosing = True
-        Timer(self.protocol.SCAN_INTERVAL, self.protocol.checkCacheIsEmpty, [self.protocol.prepareForRip]).start()
+        self.protocol.tasks.append(asyncio.ensure_future(self.protocol.checkCacheIsEmpty(self.protocol.prepareForRip)))
