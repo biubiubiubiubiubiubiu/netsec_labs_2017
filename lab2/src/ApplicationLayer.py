@@ -94,7 +94,7 @@ class EchoClientProtocol(asyncio.Protocol):
     def connection_made(self, transport):
         print("Connected to {}".format(transport.get_extra_info("peername")))
         self.transport = transport
-        self.send("hello I am the test meesage")
+        self.send("Hello world!")
 
     def data_received(self, data):
         self.deserializer.update(data)
@@ -136,6 +136,7 @@ class EchoControl:
     def callback(self, message):
         print("Server Response: {}".format(message))
         # self.txProtocol.send("__QUIT__")
+        print("Closing EchoProtocol...")
         self.txProtocol.transport.close()
 
     def stdinAlert(self):

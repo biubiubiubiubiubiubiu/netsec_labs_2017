@@ -9,11 +9,10 @@ import asyncio
 
 class PEEPProtocol(StackingProtocol):
     # Constants
-    WINDOW_SIZE = 4
-    RECIPIENT_WINDOW_SIZE = 100
+    WINDOW_SIZE = 10
     TIMEOUT = 3
     SCAN_INTERVAL = 0.1
-    DEBUG_MODE = True
+    DEBUG_MODE = False
 
     # State definitions
     STATE_DESC = {

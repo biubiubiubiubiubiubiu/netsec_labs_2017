@@ -5,7 +5,7 @@ import asyncio
 
 
 class PEEPTransport(StackingTransport):
-    CHUNK_SIZE = 10
+    CHUNK_SIZE = 1024
 
     def __init__(self, transport, protocol=None):
         super().__init__(transport)
