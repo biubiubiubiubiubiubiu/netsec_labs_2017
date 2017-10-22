@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is modified by Seth Nielson for creating P-RFC's
+    (Playground-RFC's). -->
+<!-- This template is for creating an Internet Draft using xml2rfc,
+    which is available here: http://xml2rfc.ietf.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+    There has to be one entity for each item to be referenced.
+    An alternate method (rfc include) is described in the references. --><!ENTITY RFC2119 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2360 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2360.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY RFC5226 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.5226.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+    please see http://xml2rfc.ietf.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+    (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+    (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="exp" docName="rfc793" ipr="trust200902" number="793">
+    <!-- category values: std, bcp, info, exp, and historic
+    ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
+       or pre5378Trust200902, playgroundWinter201501
+    you can add the attributes updates="NNNN" and obsoletes="NNNN"
+    they will automatically be output with "(if approved)" -->
+
+    <!-- ***** FRONT MATTER ***** -->
+
+    <front>
+        <!-- The abbreviated title is used in the page header - it is only necessary if the
+        full title is longer than 39 characters -->
+
+        <title abbrev="PRFC's">Playground Request For Comments</title>
+
+        <!-- add 'role="editor"' below for the editors if appropriate -->
+
+        <!-- Another author who claims to be an editor -->
+
+        <author fullname="Te Meng" initials="T." role="editor" surname="Meng">
+
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>tmeng4@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Ruofan Shen" initials="R." role="editor" surname="Ruofan">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>rshen3@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Cuiqing Li" initials="C." role="editor" surname="Li">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>cli92@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Menghan Bai" initials="M." role="editor" surname="Bai">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+
+                <email>mbai4@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <date year="2017"/>
+
+        <!-- If the month and year are both specified and are the current ones, xml2rfc will fill
+        in the current day for you. If only the current year is specified, xml2rfc will fill
+     in the current day and month for you. If the year is not the current one, it is
+     necessary to specify at least a month (xml2rfc assumes day="1" if not specified for the
+     purpose of calculating the expiry date).  With drafts it is normally sufficient to
+     specify just the year. -->
+
+        <!-- Meta-data Declarations -->
+
+        <area>General</area>
+
+        <workgroup>Playground Experiment Director</workgroup>
+
+        <!-- WG name at the upperleft corner of the doc,
+        IETF is fine for individual submissions.
+     If this element is not present, the default is "Network Working Group",
+        which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+        <keyword>PRFC</keyword>
+
+        <!-- Keywords will be incorporated into HTML output
+        files in a meta tag but they have no effect on text or nroff
+        output. If you submit your draft to the RFC Editor, the
+        keywords will be used for the search engine. -->
+
+        <abstract>
+            <t>This defines PEEP (Players Enjoy Eavesdropping Protocol), a protocol
+                that enables data transmission between 2 VNICs on Playground network.
+                It is resistant to common unintentional errors on the network such as
+                packet loss or damage.
+            </t>
+        </abstract>
+    </front>
+
+    <middle>
+        <section title="Introduction">
+            <t>In this document, we describe PEEP, a protocol between client and server
+                side built for Network Security Lab 2. The protocol has several major
+                components: a transport layer, a server-side protocol and a client-side
+                protocol. The protocol is constructed for providing data transmission
+                between client application with server application with TCP-like features.</t>
+        </section>
+
+        <section title="Philosophy">
+
+            <section title="The Protocol">
+                <t>The basic configuration of PEEP protocol is a client-server pattern. The
+                    side who initializes connection is setup as client and the other side
+                    becomes server. For clients to successfully initialize connections, a
+                    server should passively wait for incoming packets while a client actively
+                    starts the connection establishment process.
+                </t>
+
+                <t>Because in Playground everyone can send anything to whoever it wants, a
+                    basic authentication mechanism is needed between the client and server to
+                    prevent interference. Therefore, 2 sequence numbers are randomly generated
+                    by the client and the server as (temporary) identifiers of themselves. The
+                    sequence number also serves as an indicator of message ordering and
+                    integrity.
+                </t>
+            </section>
+
+            <section title="Connection Establishment">
+                <t>In this process, a 3-way handshake is required between server side and
+                    client side for exchanging and confirming each other's identity. The first
+                    step is that the client sends its generated sequence number in a SYN
+                    packet to the server. Then the server replies with a SYN_ACK packet
+                    containing its own sequence number and serving as acknowledgement of SYN.
+                    Finally the client sends an ACK packet for acknowledging SYN_ACK. As the
+                    SYN_ACK packet is correctly received by the client, the client confirms
+                    that the server has acknowledged its sequence number and as the 3rd ACK
+                    packet is received by the server, vice-versa.</t>
+
+            </section>
+
+            <section title="Data Communication">
+                <t>The data that flows between sender and receiver can be thought of
+                    packets of data. After the connection is established, one side can
+                    send serialized data to the transport layer. In the transport
+                    layer, a long data stream needs to be split into multiple chunks
+                    and sent in batched DATA packets to the receiver side. As some
+                    chunks may be lost or damaged (detectable from checksum mismatch)
+                    or disorganized by network congestion, the receiver needs to verify
+                    the packets' integrity with checksum and their correct order with
+                    sequence number upon retrieval of the chunks.
+                </t>
+
+                <t>An ACK packet is replied for any DATA packet correctly received.
+                    As ACKs are prone to loss, an ACK is still required even if the
+                    DATA packet is a duplicate of one previous packet and is to be
+                    discarded. This prevents the sender from repeatedly sending the
+                    same packet without any confirmation of retrieval.</t>
+
+            </section>
+
+            <section title="Disconnection">
+                <t>After a connection's missions are all fulfilled, the client can
+                    initiate a 4-way handshake process for correctly end the connection.
+                    Before the connection ends, all the remaining packets should be
+                    correctly sent and acknowledged. Once this is done for client, a
+                    RIP packet is sent to the server for indication. The server confirms
+                    it with a RIP_ACK packet and then stops processing new data while
+                    focusing on clearing its own sending buffer. After all the remaining
+                    packets are sent and ACKed, it sends its RIP packet and after client
+                    replies with RIP_ACK (or a timeout if it is lost), it informs the
+                    application layer of the end of connection. The second RIP_ACK sent
+                    also means client can safely notify the connection's end to the
+                    application. </t>
+            </section>
+        </section>
+
+        <section title="Functional Specification">
+            <section title="PEEP Packet Definition">
+                <t>The attributes in PEEP Packet is defined to perform similarly to
+                    those in TCP header, which can be used for connection establishment,
+                    data transmission and disconnection. Below comes the detailed
+                    definition of the fields inside PEEP Packet:</t>
+
+                <section title="Type:  8-bit integer (Required)">
+                    <t>The type field of PEEP Packet indicates the specific function of a
+                        packet. It includes 6 different types:</t>
+                    <t>
+                        <list style="numbers">
+                            <t>SYN: Sending synchronization request</t>
+                            <t>SYN_ACK: Acknowledgment of a SYN packet</t>
+                            <t>ACK: ACK packet is responsible for two situations:
+                                <list style="letters">
+                                    <t>SYN: Sending synchronization request</t>
+                                    <t>SYN_ACK: Acknowledgment of a SYN packet</t>
+                                    <t>ACK: ACK packet is responsible for two situations:
+                                    </t>
+                                </list>
+                            </t>
+                            <t>DATA: Data packet containing data from upper layer</t>
+                            <t>RIP: Disconnection request</t>
+                            <t>RIP_ACK: Acknowledgment of a RIP packet</t>
+                        </list>
+                    </t>
+                </section>
+
+                <section title="Type:  8-bit integer (Required)">
+                    <t>The type field of PEEP Packet indicates the specific function of a
+                        packet. It includes 6 different types:</t>
+                    <t>
+                        <list style="numbers">
+                            <t>SYN: Sending synchronization request</t>
+                            <t>SYN_ACK: Acknowledgment of a SYN packet</t>
+                            <t>ACK: ACK packet is responsible for two situations:
+                                <list style="letters">
+                                    <t>Confirming that SYN_ACK packet has arrived</t>
+                                    <t>Confirming that a DATA packet with certain sequence 
+                                    number has arrived</t>
+                                </list>
+                            </t>
+                            <t>DATA: Data Packet containing data from upper layer</t>
+                            <t>RIP: Disconnection request</t>
+                            <t>RIP_ACK: Acknowledgment of a RIP packet</t>
+                        </list>
+                    </t>
+                </section>
+
+                <section title="SequenceNumber: 32-bit integer (optional)">
+                    <t>The sequence number have multiple purposes: it identifies sender 
+                        by being randomly generated at the beginning of connection and is 
+                        raised by 1 (or after DATA packets, the length of data stream) 
+                        each time a new packet is sent, hereby also keeps packets in order. 
+                        The recipient compares sequence number of packet with the last one 
+                        received to verify whether it arrives in correct order. ACK and 
+                        RIP_ACK packets do not have a sequence number.</t>
+                </section>
+
+                <section title="Checksum: 16-bit integer (required)">
+                    <t>The Checksum is a hash representation of the original packet to keep 
+                        sure its integrity. The checksum algorithm being used is Adler32, 
+                        which is fast and widely available in zlib library. The result is 
+                        truncated to the last 16 bits. As an attacker can easily modify the 
+                        checksum of any packet, the security of checksum algorithm is not 
+                        our priority. Any protection against malignance will be implemented 
+                        as a separate secure layer. </t>
+                    <t>During computation, the old checksum field in the packet is 
+                        temporarily omitted as only other fields are cared about. After the 
+                        16-bit checksum value is computed, the Checksum field is set with 
+                        it before the packet is transmitted to the other side. By 
+                        checksumming the received packet (again with checksum field omitted) 
+                        and comparing with the sender-calculated checksum inside the packet, 
+                        the other side can check if it receives an intact packet.</t>
+                </section>
+
+                <section title="Acknowledgement: 32-bit integer (optional)">
+                    <t>Indicates a packet (SYN_ACK or DATA) has been received and specifies 
+                        the next sequence number expected to receive (last sequence number + 
+                        data length in DATA packets; seq + 1 in other packets). SYN, DATA 
+                        and RIP packets do not have an acknowledgement number.</t>
+                </section>
+
+                <section title="Data: Buffer (optional)">
+                    <t>Contains data segments in binary form passed from the application 
+                        layer, chunked into 1024 bytes in transport layer of PEEP protocol 
+                        for robustness against loss. With the serialization mechanism of 
+                        Playground, as long as the data is received in correct order, it 
+                        will be successfully deserialized no matter how many chunks it was 
+                        splitted into. Only DATA packets have this field.</t>
+                </section>
+
+            </section>
+
+            <section title="Connection Establishment">
+                <t>Before data transmission, three-way handshake is implemented to start a 
+                    connection. This procedure is initiated by client and responded by 
+                    server, which is shown as the following state machines:</t>
+                <t>
+                    <figure>
+                        <artwork><![CDATA[
+Client                                                         Server
+INIT                                                           LISTEN
+SEND-SYN           ------> (seq=x)  ------>              SYN-RECEIVED
+ESTABLISHED     <------  (seq=y, ack=x+1) <------        SYN-RECEIVED
+ESTABLISHED     ------> (seq=x+1, ack=y+1) ------>        ESTABLISHED
+]]>
+                        </artwork>
+                    </figure>
+                </t>
+                <t>
+                    <list style="numbers">
+                        <t>Client starts in the state of INIT and server starts in the state 
+                            of LISTEN, waiting for a client connection. </t>
+                        <t>Client begins by sending a SYN packet indicating that it 
+                            will use sequence numbers starting with sequence number x. At this 
+                            time, client transits to SEND-SYN State and waits for SYN_ACK packet. 
+                            Server receives the SYN packet, then transmits to the state of SYN-RECEIVED.</t>
+                        <t>Server sends back a SYN_ACK packet with sequence number y 
+                            and an acknowledgement x+1. When client receives the SYN_ACK packet, 
+                            it transits to the state ESTABLISHED. </t>
+                        <t>Client responds with an ACK packet, the acknowledgement 
+                            number of which is y+1. When server receives the ACK packet, it 
+                            transits to the state ESTABLISHED. </t>
+                    </list>
+                </t>
+            </section>
+
+            <section title="Disconnection">
+                <t>When client has no more data to send, it will inform server to close 
+                    connection while closing itself. The state machines are as follows:</t>
+                <t>
+                    <figure>
+                        <artwork><![CDATA[
+Client                                                         Server
+ESTABLISHED                                               ESTABLISHED
+FIN-WAIT-1               ------> (seq=x)  ------>          CLOSE-WAIT
+FIN-WAIT-2              <------ (ack=x+1) <------          CLOSE-WAIT
+TIME-WAIT                <------ (seq=y) <------             LAST-ACK
+TIME-WAIT               ------> (ack=y+1) ------>              CLOSED
+CLOSED                                                         CLOSED
+]]>
+                        </artwork>
+                    </figure>
+                </t>
+                <t>
+                    <list style="numbers">
+                        <t>The disconnection begins at when client has sent all buffered DATA 
+                            packets and both of client's and server's state are ESTABLISHED. </t>
+                        <t>Client sends RIP packet to inform server that all data sending is 
+                            finished and transmits to status of FIN-WAIT-1. It will stop accepting 
+                            new data from transport layer.</t>
+                        <t>Server sends back a RIP_ACK packet with an acknowledgement x+1 and 
+                            transmits to the state of CLOSE-WAIT. When client receives RIP_ACK, it 
+                            transmits to the state of FIN-WAIT-2.</t>
+                        <t>Server again sends a RIP with a sequence number y to inform client 
+                            that there is not more data to send. When client receives RIP from 
+                            server, it transits to TIME-WAIT.</t>
+                        <t>Client sends RIP_ACK with acknowledgement y+1 and server is closed 
+                            when receiving this packet.</t>
+                        <t>Client is closed.</t>
+                    </list>
+                </t>
+            </section>
+
+            <section title="Data Communication">
+                <t>The data communication begins once the connection is established. A DATA 
+                    packet contains maximum 1024 bytes of binary data, its sequence number and 
+                    checksum. Data can be sent from both client and server, so they share a 
+                    common data processing procedure.</t>
+                <t>A data packet received is first checksummed and any mismatching packet is 
+                    discarded. Then the receiver performs comparison of its sequence number to 
+                    (partner's last sequence number + length of data in bytes). If it matches 
+                    that number, the packet can be considered arriving in correct order and 
+                    pushed to the upper layer while an ACK is replied.</t>
+                <t>It is also possible that the packet is already received and its sequence 
+                    number is lower than the expected one. In this situation, an ACK of 
+                    currently expected seq number is still required for error handling. Unlike 
+                    other packets, a DATA packet sets and is responded with acknowledgement 
+                    number as (seq + length of data in bytes) instead of the normal seq+1. </t>
+            </section>
+            <section title="Error Handling">
+                <t>There are several types of potential errors that may happen during HandShakes 
+                    and data transmission. More details are explained as follows:</t>
+                <section title="Client does not receive SYN-ACK during Handshake">
+                    <t>There are two potential reasons for this case:</t>
+                    <t>
+                        <list style="letters">
+                            <t>Server did not receive the SYN from client</t>
+                            <t>Server received the SYN but SYN-ACK was lost when being replied to client</t>
+                        </list>
+                    </t>
+                    <t>In this case, as the state of server is unclear, client is supposed to 
+                        resend the same SYN packet (without raising sequence number) after timeout. 
+                        When server receives the SYN, it replies with a SYN_ACK packet even if 
+                        it is considered a duplicate. </t>
+                </section>
+                <section title="server does not receive ACK during Handshake">
+                    <t>The solution of this situation is similar to that of the first kind 
+                        of error. Server should resend the same SYN_ACK and expect to get 
+                        an ACK for entering ESTABLISHED state.</t>
+                </section>
+                <section title="Data is received out of order">
+                    <t>When data received is out of order, a cache of the receiver 
+                        temporarily stores it and waits for the missing packet(s) with 
+                        smaller sequence number. Everytime a packet in correct order is 
+                        received, the packet and all its subsequent packets cached are sent 
+                        to the upper layer until the next vacancy in cache.</t>
+                </section>
+                <section title="Acknowledgement of data is not received by the sender">
+                    <t>Likewise, there are two potential reasons for this case:</t>
+                    <t>
+                        <list style="letters">
+                            <t>Receiver has received the data but the replied ACK was lost</t>
+                            <t>Receiver did not receive the data</t>
+                        </list>
+                    </t>
+                    <t>It is necessary for the sender to resend data to deal with these 
+                        types of error. Consecutive packets are sent at max with the size 
+                        of sending window (currently 10) and cached to prepare for 
+                        potential resending. Each ACK received, if correct, will remove 
+                        the correspondent packets from cache with sequence number less 
+                        than its acknowledgement number. </t>
+                    <t>The cached packet is stored along with a timestamp of when it's 
+                        last sent. A scanner coroutine ensures that if the elapsed time 
+                        from any packet's stored timestamp is longer than a timeout 
+                        constant (currently 3s), it is resent and its timestamp is reset 
+                        to now.</t>
+                    <t>For situation a., the resending process may produce duplicate data 
+                        packets. Though these can be identified from sequence number, an 
+                        ACK with last correct data seq as acknowledgement number is still 
+                        required any time a packet is received. This is to prevent the 
+                        sender from not knowing of its retrieval and sending it over and 
+                        over again.</t>
+                </section>
+                <section title="Lost packets in the RIP process">
+                    <t>The RIP packets from both sides are confirmed of their retrieval by 
+                        RIP_ACK packets. If a RIP_ACK is not received, RIP will be resent 
+                        after timeout. As there are no remaining data when RIP is sent, the 
+                        sequence number is not updated anymore.</t>
+                </section>
+            </section>
+            <section title="Computational Algorithms">
+                <t>For now the only algorithm being used is Adler32, which is fast and 
+                    widely available as a part of zlib. It is used to create a checksum of Data 
+                    field in DATA packets, the result of which is truncated to the last 16 bits. 
+                    As an attacker can easily modify the checksum of any packet, the absolute 
+                    security of checksum algorithm is not our priority. Any protection against 
+                    malignance will be implemented as a separate secure layer.</t>
+            </section>
+        </section>
+    </middle>
+
+    <!--  *****BACK MATTER ***** -->
+
+    <back>
+        <!-- References split into informative and normative -->
+
+        <!-- There are 2 ways to insert reference entries from the citation libraries:
+    1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+    2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+       (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+    Both are cited textually in the same manner: by using xref elements.
+    If you use the PI option, xml2rfc will, by default, try to find included files in the same
+    directory as the including file. You can also define the XML_LIBRARY environment variable
+    with a value containing a set of directories to search.  These can be either in the local
+    filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+        <!-- Change Log
+
+v00 2017-10-14  EBD   Initial version
+
+  -->
+    </back>
+</rfc>

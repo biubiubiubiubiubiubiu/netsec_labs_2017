@@ -4,6 +4,8 @@
 ### Instructions
 lab2/src/ is a modular version of our Lab2 protocol.
 
+lab2/docs/prfc/lab2_proposed_prfc.xml is the xml file for prfc.
+
 The submission includes an Echo client and server as example. Use
 
 ```
