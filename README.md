@@ -23,6 +23,14 @@ This submission enables data chunks. If the data bytes is longer than 1024 (a co
 #### TODO LIST:
 1. Error correction when the packet sent is lost or damaged; implement packet cache and timeout for sender to resend failed packets
 
+2. Two issues to be settled in future:
+    * Loss of packets  
+        * Choices
+            * set up a time-out at data sender's end when it has sent out the last packet. If not received ACK for packet with certain sequence number in some time, it will resend again. I think there should be a limit on retry time.
+        * set up time-out for every packet. This can be settled by using tuples.
+    * Duplication of packets: only receive first correct packet
+        * Send back an ACK to guarantee that this packet has been removed from cache
+
 
 ### Protocol Definitions
 * PEEPPacket PacketType Definitions
