@@ -6,7 +6,7 @@ import random
 
 
 class PEEPTransport(StackingTransport):
-    CHUNK_SIZE = 8
+    CHUNK_SIZE = 1024
 
     def __init__(self, transport, protocol=None):
         super().__init__(transport)
@@ -35,11 +35,11 @@ class PEEPTransport(StackingTransport):
                         self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
                         # determine the transmission is successful or not
                         sent_val = random.uniform(0, 1)
-                        if (sent_val > self.protocol.LOSS_RATE):
-                            print("packet is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
-                            # super().write(pkt.__serialize__())
-                        else:
-                            print("packet failed to send out, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
+                        # if (sent_val > self.protocol.LOSS_RATE):
+                        #     print("packet is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
+                        #     # super().write(pkt.__serialize__())
+                        # else:
+                        #     print("packet failed to send out, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
                     else:
                         self.protocol.dbgPrint(
                             "buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))

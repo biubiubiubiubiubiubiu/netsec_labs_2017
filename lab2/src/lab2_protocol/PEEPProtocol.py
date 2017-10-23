@@ -9,12 +9,12 @@ import asyncio,random
 class PEEPProtocol(StackingProtocol):
     # Constants
     # TODO: syn_ack should plus 1 when resending syn_ack!
-    WINDOW_SIZE = 6
+    WINDOW_SIZE = 10
     TIMEOUT = 3
     SCAN_INTERVAL = 0.1
     DEBUG_MODE = False
     # change the value to change the transmission unreliability
-    LOSS_RATE = 0.3
+    LOSS_RATE = 0
 
     # State definitions
     STATE_DESC = {
@@ -188,10 +188,10 @@ class PEEPProtocol(StackingProtocol):
     def writeWithRate(self, pkt, pktType):
         sent_val = random.uniform(0, 1)
         if (sent_val > self.LOSS_RATE):
-            print("{!r} packet in cache is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
+            self.dbgPrint("{!r} packet in cache is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
             self.transport.write(pkt.__serialize__())
         else:
-            print("{!r} packet failed to send out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
+            self.dbgPrint("{!r} packet failed to send out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
 
     def prepareForRip(self):
         raise NotImplementedError("PEEPProtocol: prepareForRip() not implemented")
