@@ -4,15 +4,17 @@ import os
 from playground.network.common import StackingProtocol
 from threading import Timer
 import time
-import asyncio
-
+import asyncio,random
 
 class PEEPProtocol(StackingProtocol):
     # Constants
+    # TODO: syn_ack should plus 1 when resending syn_ack!
     WINDOW_SIZE = 10
     TIMEOUT = 3
     SCAN_INTERVAL = 0.1
     DEBUG_MODE = False
+    # change the value to change the transmission unreliability
+    LOSS_RATE = 0
 
     # State definitions
     STATE_DESC = {
@@ -87,19 +89,20 @@ class PEEPProtocol(StackingProtocol):
         self.dbgPrint("Sending SYN packet with sequence number " + str(self.seqNum) +
                       ", current state " + self.STATE_DESC[self.state])
         self.dbgPrint("Packet checksum: " + str(synPacket.Checksum))
-        self.transport.write(synPacket.__serialize__())
+        self.writeWithRate(synPacket, "Syn")
 
-    def sendSynAck(self):
-        synAckPacket = PEEPPacket.makeSynAckPacket(self.seqNum, self.partnerSeqNum)
-        self.dbgPrint("Sending SYN_ACK packet with sequence number " + str(self.seqNum) +
+    def sendSynAck(self, synAck_seqNum):
+        synAckPacket = PEEPPacket.makeSynAckPacket(synAck_seqNum, self.partnerSeqNum)
+        self.dbgPrint("Sending SYN_ACK packet with sequence number " + str(synAck_seqNum) +
                       ", ack number " + str(self.partnerSeqNum) + ", current state " + self.STATE_DESC[self.state])
-        self.transport.write(synAckPacket.__serialize__())
+        
+        self.writeWithRate(synAckPacket, "SynAck")
 
     def sendAck(self):
         ackPacket = PEEPPacket.makeAckPacket(self.partnerSeqNum)
         self.dbgPrint("Sending ACK packet with acknowledgement " + str(self.partnerSeqNum) +
                       ", current state " + self.STATE_DESC[self.state])
-        self.transport.write(ackPacket.__serialize__())
+        self.writeWithRate(ackPacket, "Ack")
 
     def sendRip(self):
         ripPacket = PEEPPacket.makeRipPacket(self.seqNum, self.partnerSeqNum)
@@ -133,14 +136,14 @@ class PEEPProtocol(StackingProtocol):
         else:
             # wrong packet seqNum, discard
             self.dbgPrint("ERROR: Received DATA packet with lower sequence number " +
-                          str(pkt.SequenceNumber) + ", discarded.")
+                          str(pkt.SequenceNumber) + ",current: {!r}, discarded.".format(self.partnerSeqNum))
 
         # send an ack anyway
         acknowledgement = self.partnerSeqNum
         ackPacket = PEEPPacket.makeAckPacket(acknowledgement)
         self.dbgPrint("Sending ACK packet with acknowledgement " + str(acknowledgement) +
                       ", current state " + self.STATE_DESC[self.state])
-        self.transport.write(ackPacket.__serialize__())
+        self.writeWithRate(ackPacket, "Ack")
 
     def processAckPkt(self, pkt):
         self.dbgPrint("Received ACK packet with acknowledgement number " +
@@ -152,7 +155,7 @@ class PEEPProtocol(StackingProtocol):
                     (nextAck, dataPkt) = self.sendingDataBuffer.pop(0)
                     self.dbgPrint("Server: Sending next packet in sendingDataBuffer...")
                     self.sentDataCache[nextAck] = (dataPkt, time.time())
-                    self.transport.write(dataPkt.__serialize__())
+                    self.writeWithRate(dataPkt, "Data")
                 self.dbgPrint("Server: Received ACK for dataSeq: {!r}, removing".format(
                     self.sentDataCache[ackNumber][0].SequenceNumber))
                 del self.sentDataCache[ackNumber]
@@ -173,7 +176,7 @@ class PEEPProtocol(StackingProtocol):
                 if currentTime - timestamp >= self.TIMEOUT:
                     # resend data packet after timeout
                     self.dbgPrint("Sending packet " + str(dataPkt.SequenceNumber) + " in cache...")
-                    self.transport.write(dataPkt.__serialize__())
+                    self.writeWithRate(dataPkt, "Data")
                     self.sentDataCache[ackNumber] = (dataPkt, currentTime)
             await asyncio.sleep(self.SCAN_INTERVAL)
 
@@ -182,8 +185,17 @@ class PEEPProtocol(StackingProtocol):
             await asyncio.sleep(self.SCAN_INTERVAL)
         callback()
 
+    def writeWithRate(self, pkt, pktType):
+        sent_val = random.uniform(0, 1)
+        if (sent_val > self.LOSS_RATE):
+            self.dbgPrint("{!r} packet in cache is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
+            self.transport.write(pkt.__serialize__())
+        else:
+            self.dbgPrint("{!r} packet failed to send out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType, pkt.SequenceNumber, sent_val))
+
     def prepareForRip(self):
         raise NotImplementedError("PEEPProtocol: prepareForRip() not implemented")
 
     def isClosed(self):
         raise NotImplementedError("PEEPProtocol: isClosed() not implemented")
+    

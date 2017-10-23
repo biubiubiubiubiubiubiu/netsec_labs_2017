@@ -2,6 +2,7 @@ from playground.network.common import StackingTransport
 from ..PEEPPacket import PEEPPacket
 import time
 import asyncio
+import random
 
 
 class PEEPTransport(StackingTransport):
@@ -32,7 +33,13 @@ class PEEPTransport(StackingTransport):
                         self.protocol.dbgPrint(
                             "sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
                         self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
-                        super().write(pkt.__serialize__())
+                        # determine the transmission is successful or not
+                        sent_val = random.uniform(0, 1)
+                        # if (sent_val > self.protocol.LOSS_RATE):
+                        #     print("packet is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
+                        #     # super().write(pkt.__serialize__())
+                        # else:
+                        #     print("packet failed to send out, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
                     else:
                         self.protocol.dbgPrint(
                             "buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))

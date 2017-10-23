@@ -25,11 +25,12 @@ class ServerProtocol(PEEPProtocol):
                                       str(pkt.SequenceNumber))
                         self.state = self.STATE_SERVER_SYN
                         self.partnerSeqNum = pkt.SequenceNumber + 1
-                        self.sendSynAck()
+                        synAck_seq = self.seqNum
+                        self.sendSynAck(synAck_seq)
                         self.seqNum += 1
                         self.tasks.append(asyncio.ensure_future(
                             self.checkState([self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSED],
-                                            self.sendSynAck)))
+                                            self.sendSynAck(synAck_seq))))
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
@@ -81,7 +82,7 @@ class ServerProtocol(PEEPProtocol):
 
                     else:
                         self.dbgPrint("Server: Wrong packet: seq num {!r}, type {!r}， current state: {!r}".format(
-                            pkt.SequenceNumber, pkt.Type, self.STATE_DESC[self.state]))
+                            pkt.SequenceNumber, PEEPPacket.TYPE_DESC[pkt.Type], self.STATE_DESC[self.state]))
                 else:
                     self.dbgPrint("Wrong packet checksum: " + str(pkt.Checksum))
             else:
