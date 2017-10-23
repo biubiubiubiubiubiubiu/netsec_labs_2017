@@ -14,7 +14,7 @@ class PEEPTransport(StackingTransport):
 
     def write(self, data):
         if self.protocol:
-            if not self.protocol.isClosing:
+            if not self.protocol.isClosing():
                 self.protocol.dbgPrint("PEEPTransport: Write got {} bytes of data to package".format(len(data)))
                 # Create data chunks
                 i = 0
@@ -29,12 +29,13 @@ class PEEPTransport(StackingTransport):
                     pkt = PEEPPacket.makeDataPacket(self.protocol.seqNum, sentData)
                     index += 1
                     ackNumber = self.protocol.seqNum + len(sentData)
-                    if index <= self.protocol.WINDOW_SIZE:
+                    if len(self.protocol.sentDataCache) <= self.protocol.WINDOW_SIZE:
                         self.protocol.dbgPrint(
-                            "sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                            "PEEPTransport: sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                        self.protocol.transport.write(pkt.__serialize__())
                         self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
                         # determine the transmission is successful or not
-                        sent_val = random.uniform(0, 1)
+                        # sent_val = random.uniform(0, 1)
                         # if (sent_val > self.protocol.LOSS_RATE):
                         #     print("packet is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
                         #     # super().write(pkt.__serialize__())
@@ -42,7 +43,7 @@ class PEEPTransport(StackingTransport):
                         #     print("packet failed to send out, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
                     else:
                         self.protocol.dbgPrint(
-                            "buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                            "PEEPTransport: buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
                         self.protocol.sendingDataBuffer.append((ackNumber, pkt))
                     self.protocol.seqNum += len(sentData)
                 self.protocol.dbgPrint(
@@ -57,6 +58,6 @@ class PEEPTransport(StackingTransport):
 
     def close(self):
         # clear buffer then send RIP
-        self.protocol.dbgPrint("PEEPTransport: Transport closing...")
-        self.protocol.isClosing = True
-        self.protocol.tasks.append(asyncio.ensure_future(self.protocol.checkCacheIsEmpty(self.protocol.prepareForRip)))
+        self.protocol.dbgPrint("PEEPTransport: Transport closing, protocol state " + self.protocol.STATE_DESC[self.protocol.state])
+        self.protocol.enterClosing()
+        self.protocol.tasks.append(asyncio.ensure_future(self.protocol.checkAllSent(self.protocol.prepareForRip)))

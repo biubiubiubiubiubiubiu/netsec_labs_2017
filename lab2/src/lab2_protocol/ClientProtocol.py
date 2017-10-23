@@ -17,7 +17,8 @@ class ClientProtocol(PEEPProtocol):
             self.sendSyn()
             self.state = self.STATE_CLIENT_SYN_ACK
             self.tasks.append(asyncio.ensure_future(
-                self.checkState([self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSED], self.sendSyn)))
+                self.checkState([self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSING, self.STATE_CLIENT_CLOSED],
+                                self.sendSyn)))
 
     def data_received(self, data):
         self.deserializer.update(data)
@@ -45,34 +46,33 @@ class ClientProtocol(PEEPProtocol):
                             # duplicate, send ack anyway
                             self.sendAck()
 
-                    elif (pkt.Type, self.state) == (
-                            PEEPPacket.TYPE_ACK,
-                            self.STATE_CLIENT_TRANSMISSION):
-                        self.processAckPkt(pkt)
+                    elif pkt.Type == PEEPPacket.TYPE_ACK:
+                        if self.state in (self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSING):
+                            self.processAckPkt(pkt)
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_DATA,
                             self.STATE_CLIENT_TRANSMISSION):
                         self.processDataPkt(pkt)
 
-                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                    elif (pkt.Type, pkt.SequenceNumber) == (
                             PEEPPacket.TYPE_RIP,
-                            self.STATE_CLIENT_TRANSMISSION,
                             self.partnerSeqNum):
                         self.dbgPrint("Received RIP packet with sequence number " +
                                       str(pkt.SequenceNumber))
                         self.partnerSeqNum = pkt.SequenceNumber + 1
-                        # send rip ack and stop after cache is empty
-                        self.tasks.append(asyncio.ensure_future(self.checkCacheIsEmpty(self.ripAckAndStop)))
+                        # send rip ack and stop immediately
+                        self.ripAckAndStop()
 
                     elif (pkt.Type, self.state, pkt.Acknowledgement) == (
                             PEEPPacket.TYPE_RIP_ACK,
-                            self.STATE_CLIENT_TRANSMISSION,
+                            self.STATE_CLIENT_CLOSING,
                             self.seqNum + 1):
                         self.dbgPrint("Received RIP-ACK packet with ack number " +
                                       str(pkt.Acknowledgement))
-                        # TODO what to do after client receiving RIP-ACK?
-                        # self.state = self.STATE_CLIENT_CLOSED
+                        self.state = self.STATE_CLIENT_CLOSED
+                        self.dbgPrint("Closing...")
+                        self.stop()
                     else:
                         self.dbgPrint("Client: Wrong packet: seq num {!r}, type {!r}， current state: {!r}".format(
                             pkt.SequenceNumber, PEEPPacket.TYPE_DESC[pkt.Type], self.STATE_DESC[self.state]))
@@ -82,10 +82,15 @@ class ClientProtocol(PEEPProtocol):
                 self.dbgPrint("Wrong packet class type: {!r}, state: {!r} ".format(str(type(pkt)),
                                                                                    self.STATE_DESC[self.state]))
 
+    def enterClosing(self):
+        self.state = self.STATE_CLIENT_CLOSING
+
     def prepareForRip(self):
-        self.dbgPrint("Client: preparing for RIP...")
-        self.sendRip()
-        self.tasks.append(asyncio.ensure_future(self.checkState([self.STATE_CLIENT_CLOSED], self.sendRip)))
+        self.dbgPrint("Preparing for RIP...")
+        if self.state != self.STATE_SERVER_CLOSED:
+            self.sendRip()
+            self.tasks.append(
+                asyncio.ensure_future(self.checkState([self.STATE_CLIENT_CLOSED], self.sendRip, self.MAX_RIP_RETRIES)))
 
     def ripAckAndStop(self):
         self.sendRipAck()
@@ -93,5 +98,5 @@ class ClientProtocol(PEEPProtocol):
         self.state = self.STATE_CLIENT_CLOSED
         self.stop()
 
-    def isClosed(self):
-        return self.state == self.STATE_CLIENT_CLOSED
+    def isClosing(self):
+        return self.state == self.STATE_CLIENT_CLOSING or self.state == self.STATE_CLIENT_CLOSED

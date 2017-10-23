@@ -29,14 +29,15 @@ class ServerProtocol(PEEPProtocol):
                         self.sendSynAck(synAck_seq)
                         self.seqNum += 1
                         self.tasks.append(asyncio.ensure_future(
-                            self.checkState([self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSED],
-                                            self.sendSynAck(synAck_seq))))
+                            self.checkState(
+                                [self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSING, self.STATE_SERVER_CLOSED],
+                                lambda: self.sendSynAck(synAck_seq))))
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_ACK,
                             self.STATE_SERVER_SYN):
                         # special ack for syn-ack
-                        if pkt.Acknowledgement >= self.seqNum:
+                        if pkt.Acknowledgement == self.seqNum:
                             self.dbgPrint("Received ACK packet with acknowledgement number " +
                                           str(pkt.Acknowledgement))
                             self.state = self.STATE_SERVER_TRANSMISSION
@@ -47,32 +48,28 @@ class ServerProtocol(PEEPProtocol):
                             self.dbgPrint("Server: Wrong ACK packet: ACK number: {!r}, expected: {!r}".format(
                                 pkt.Acknowledgement, self.seqNum))
 
-                    elif (pkt.Type, self.state) == (
-                            PEEPPacket.TYPE_ACK,
-                            self.STATE_SERVER_TRANSMISSION):
-                        self.processAckPkt(pkt)
+
+                    elif pkt.Type == PEEPPacket.TYPE_ACK:
+                        if self.state in (self.STATE_SERVER_TRANSMISSION, self.STATE_SERVER_CLOSING):
+                            self.processAckPkt(pkt)
 
                     elif (pkt.Type, self.state) == (
                             PEEPPacket.TYPE_DATA,
                             self.STATE_SERVER_TRANSMISSION):
                         self.processDataPkt(pkt)
 
-                    elif (pkt.Type, self.state, pkt.SequenceNumber) == (
+                    elif (pkt.Type, pkt.SequenceNumber) == (
                             PEEPPacket.TYPE_RIP,
-                            self.STATE_SERVER_TRANSMISSION,
                             self.partnerSeqNum):
                         self.dbgPrint("Received RIP packet with sequence number " +
                                       str(pkt.SequenceNumber))
-                        # TODO: what if RIP arrives before last DATA?
                         self.partnerSeqNum = pkt.SequenceNumber + 1
-                        self.sendRipAck()
-                        # send rip after no remaining packets in buffer
-                        self.isClosing = True
-                        self.tasks.append(asyncio.ensure_future(self.checkCacheIsEmpty(self.prepareForRip)))
+                        # send rip ack and stop immediately
+                        self.ripAckAndStop()
 
                     elif (pkt.Type, self.state, pkt.Acknowledgement) == (
                             PEEPPacket.TYPE_RIP_ACK,
-                            self.STATE_SERVER_TRANSMISSION,
+                            self.STATE_SERVER_CLOSING,
                             self.seqNum + 1):
                         self.dbgPrint("Received RIP-ACK packet with ack number " +
                                       str(pkt.Acknowledgement))
@@ -89,10 +86,21 @@ class ServerProtocol(PEEPProtocol):
                 self.dbgPrint("Wrong packet class type: {!r}, state: {!r} ".format(str(type(pkt)),
                                                                                    self.STATE_DESC[self.state]))
 
-    def prepareForRip(self):
-        self.dbgPrint("Server: preparing for RIP...")
-        self.sendRip()
-        self.tasks.append(asyncio.ensure_future(self.checkState([self.STATE_SERVER_CLOSED], self.sendRip)))
+    def enterClosing(self):
+        self.state = self.STATE_SERVER_CLOSING
 
-    def isClosed(self):
-        return self.state == self.STATE_SERVER_CLOSED
+    def prepareForRip(self):
+        self.dbgPrint("Preparing for RIP...")
+        if self.state != self.STATE_SERVER_CLOSED:
+            self.sendRip()
+            self.tasks.append(
+                asyncio.ensure_future(self.checkState([self.STATE_SERVER_CLOSED], self.sendRip, self.MAX_RIP_RETRIES)))
+
+    def ripAckAndStop(self):
+        self.sendRipAck()
+        self.dbgPrint("Closing...")
+        self.state = self.STATE_SERVER_CLOSED
+        self.stop()
+
+    def isClosing(self):
+        return self.state == self.STATE_SERVER_CLOSING or self.state == self.STATE_SERVER_CLOSED
