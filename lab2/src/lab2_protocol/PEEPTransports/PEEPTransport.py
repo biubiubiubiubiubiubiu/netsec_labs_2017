@@ -31,7 +31,8 @@ class PEEPTransport(StackingTransport):
                     ackNumber = self.protocol.seqNum + len(sentData)
                     if len(self.protocol.sentDataCache) <= self.protocol.WINDOW_SIZE:
                         self.protocol.dbgPrint(
-                            "PEEPTransport: sending packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                            "PEEPTransport: Sending packet {!r}, sequence number: {!r}".format(index,
+                                                                                               pkt.SequenceNumber))
                         self.protocol.transport.write(pkt.__serialize__())
                         self.protocol.sentDataCache[ackNumber] = (pkt, time.time())
                         # determine the transmission is successful or not
@@ -43,11 +44,12 @@ class PEEPTransport(StackingTransport):
                         #     print("packet failed to send out, sequenceNum: {!r}, sent_val: {!r}".format(pkt.SequenceNumber, sent_val))
                     else:
                         self.protocol.dbgPrint(
-                            "PEEPTransport: buffering packet {!r}, sequence number: {!r}".format(index, pkt.SequenceNumber))
+                            "PEEPTransport: Buffering packet {!r}, sequence number: {!r}".format(index,
+                                                                                                 pkt.SequenceNumber))
                         self.protocol.sendingDataBuffer.append((ackNumber, pkt))
                     self.protocol.seqNum += len(sentData)
                 self.protocol.dbgPrint(
-                    "PEEPTransport: data transmitting finished, number of packets sent: {!r}".format(index))
+                    "PEEPTransport: Batch transmission finished, number of packets sent: {!r}".format(index))
             else:
                 self.protocol.dbgPrint("PEEPTransport: protocol is closing, unable to write anymore.")
 
@@ -58,6 +60,14 @@ class PEEPTransport(StackingTransport):
 
     def close(self):
         # clear buffer then send RIP
-        self.protocol.dbgPrint("PEEPTransport: Transport closing, protocol state " + self.protocol.STATE_DESC[self.protocol.state])
-        self.protocol.enterClosing()
-        self.protocol.tasks.append(asyncio.ensure_future(self.protocol.checkAllSent(self.protocol.prepareForRip)))
+        self.protocol.dbgPrint(
+            "PEEPTransport: Transport closing, protocol state " + self.protocol.STATE_DESC[self.protocol.state]
+            + ", seq " + str(self.protocol.seqNum) + ", partnerSeq " + str(self.protocol.partnerSeqNum))
+        self.protocol.dbgPrint(
+            "PEEPTransport: Current cache size " + str(len(self.protocol.sentDataCache)) + ", buffer size "
+            + str(len(self.protocol.sendingDataBuffer)) + ", receive buffer "
+            + str(len(self.protocol.receivedDataBuffer)) + ": " + str(list(self.protocol.receivedDataBuffer.keys())))
+        if not self.protocol.isClosing():
+            self.protocol.tasks.append(asyncio.ensure_future(self.protocol.checkAllSent(self.protocol.prepareForRip)))
+        else:
+            self.protocol.dbgPrint("PEEPTransport: Protocol is already closing.")

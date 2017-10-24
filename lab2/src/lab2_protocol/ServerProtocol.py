@@ -86,12 +86,10 @@ class ServerProtocol(PEEPProtocol):
                 self.dbgPrint("Wrong packet class type: {!r}, state: {!r} ".format(str(type(pkt)),
                                                                                    self.STATE_DESC[self.state]))
 
-    def enterClosing(self):
-        self.state = self.STATE_SERVER_CLOSING
-
     def prepareForRip(self):
         self.dbgPrint("Preparing for RIP...")
         if self.state != self.STATE_SERVER_CLOSED:
+            self.state = self.STATE_SERVER_CLOSING
             self.sendRip()
             self.tasks.append(
                 asyncio.ensure_future(self.checkState([self.STATE_SERVER_CLOSED], self.sendRip, self.MAX_RIP_RETRIES)))
@@ -104,3 +102,6 @@ class ServerProtocol(PEEPProtocol):
 
     def isClosing(self):
         return self.state == self.STATE_SERVER_CLOSING or self.state == self.STATE_SERVER_CLOSED
+
+    def isClosed(self):
+        return self.state == self.STATE_SERVER_CLOSED

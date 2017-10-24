@@ -13,7 +13,7 @@ class PEEPProtocol(StackingProtocol):
     TIMEOUT = 0.5
     MAX_RIP_RETRIES = 4
     SCAN_INTERVAL = 0.01
-    DEBUG_MODE = True
+    DEBUG_MODE = False
     # change the value to change the transmission unreliability
     LOSS_RATE = 0
 
@@ -78,14 +78,10 @@ class PEEPProtocol(StackingProtocol):
         return self.seqNum
 
     def stop(self):
-        self.dbgPrint("Goodbye!")
+        self.dbgPrint("Goodbye! Remaining task number: " + str(len(self.tasks)))
         future = asyncio.gather(*self.tasks, return_exceptions=True)
-        future.add_done_callback(self.stopCallback)
+        future.add_done_callback(lambda res: self.transport.lowerTransport().close())
         future.cancel()
-
-    def stopCallback(self, res):
-        if self.transport:
-            self.transport.close()
 
     def sendSyn(self):
         synPacket = PEEPPacket.makeSynPacket(self.seqNum)
@@ -140,7 +136,7 @@ class PEEPProtocol(StackingProtocol):
             self.receivedDataBuffer[pkt.SequenceNumber] = pkt
         else:
             # wrong packet seqNum, discard
-            self.dbgPrint("PEEPProtocol-ERROR: Received DATA packet with lower sequence number " +
+            self.dbgPrint("ERROR: Received DATA packet with lower sequence number " +
                           str(pkt.SequenceNumber) + ",current: {!r}, discarded.".format(self.partnerSeqNum))
 
         # send an ack anyway
@@ -158,7 +154,7 @@ class PEEPProtocol(StackingProtocol):
             if ackNumber <= latestAckNumber:
                 if len(self.sendingDataBuffer) > 0:
                     (nextAck, dataPkt) = self.sendingDataBuffer.pop(0)
-                    self.dbgPrint("Sending next packet in sendingDataBuffer...")
+                    self.dbgPrint("Sending next packet " + str(nextAck) + " in sendingDataBuffer...")
                     self.sentDataCache[nextAck] = (dataPkt, time.time())
                     self.writeWithRate(dataPkt, "Data")
                 self.dbgPrint("Received ACK for dataSeq: {!r}, removing".format(
@@ -198,10 +194,10 @@ class PEEPProtocol(StackingProtocol):
     def writeWithRate(self, pkt, pktType):
         sent_val = random.uniform(0, 1)
         if sent_val > self.LOSS_RATE and self.transport:
-            self.dbgPrint(
-                "{!r} packet in cache is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType,
-                                                                                                          pkt.SequenceNumber,
-                                                                                                          sent_val))
+            # self.dbgPrint(
+            #     "{!r} packet in cache is sent out successfully, sequenceNum: {!r}, sent_val: {!r}".format(pktType,
+            #                                                                                               pkt.SequenceNumber,
+            #                                                                                               sent_val))
             self.transport.write(pkt.__serialize__())
         else:
             self.dbgPrint(
@@ -209,11 +205,11 @@ class PEEPProtocol(StackingProtocol):
                                                                                                         pkt.SequenceNumber,
                                                                                                         sent_val))
 
-    def enterClosing(self):
-        raise NotImplementedError("enterClosing() not implemented")
-
     def prepareForRip(self):
         raise NotImplementedError("prepareForRip() not implemented")
 
     def isClosing(self):
         raise NotImplementedError("isClosing() not implemented")
+
+    def isClosed(self):
+        raise NotImplementedError("isClosed() not implemented")
