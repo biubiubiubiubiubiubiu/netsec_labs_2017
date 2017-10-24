@@ -210,6 +210,3 @@ class PEEPProtocol(StackingProtocol):
 
     def isClosing(self):
         raise NotImplementedError("isClosing() not implemented")
-
-    def isClosed(self):
-        raise NotImplementedError("isClosed() not implemented")

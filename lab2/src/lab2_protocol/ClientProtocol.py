@@ -98,6 +98,3 @@ class ClientProtocol(PEEPProtocol):
 
     def isClosing(self):
         return self.state == self.STATE_CLIENT_CLOSING or self.state == self.STATE_CLIENT_CLOSED
-
-    def isClosed(self):
-        return self.state == self.STATE_CLIENT_CLOSED

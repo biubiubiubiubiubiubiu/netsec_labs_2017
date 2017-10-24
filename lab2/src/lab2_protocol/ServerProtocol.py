@@ -102,6 +102,3 @@ class ServerProtocol(PEEPProtocol):
 
     def isClosing(self):
         return self.state == self.STATE_SERVER_CLOSING or self.state == self.STATE_SERVER_CLOSED
-
-    def isClosed(self):
-        return self.state == self.STATE_SERVER_CLOSED
