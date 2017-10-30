@@ -1,8 +1,9 @@
-from .PEEPPacket import PEEPPacket
-from .PEEPTransports.PEEPTransport import PEEPTransport
-from .PEEPProtocol import PEEPProtocol
-from threading import Timer
 import asyncio
+
+from ..Packets.PEEPPacket import PEEPPacket
+from ..Transports.PEEPTransport import PEEPTransport
+
+from .PEEPProtocol import PEEPProtocol
 
 
 class ServerProtocol(PEEPProtocol):

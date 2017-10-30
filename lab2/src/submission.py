@@ -24,7 +24,7 @@ if __name__ == "__main__":
     if len(testArgs) > 1:
         remoteAddress = testArgs[1]
     loop = asyncio.get_event_loop()
-    # loop.set_debug(enabled=True)
+    loop.set_debug(enabled=True)
 
     if mode.lower() == "server":
         coro = playground.getConnector('lab2_protocol').create_playground_server(lambda: EchoServerProtocol(loop), 101)

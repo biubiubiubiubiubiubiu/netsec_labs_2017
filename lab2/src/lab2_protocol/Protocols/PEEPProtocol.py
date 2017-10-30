@@ -1,10 +1,10 @@
-from .PEEPPacket import PEEPPacket
-from playground.network.packet import PacketType
+import asyncio
 import os
-from playground.network.common import StackingProtocol
-from threading import Timer
+import random
 import time
-import asyncio, random
+
+from playground.network.common import StackingProtocol
+from ..Packets.PEEPPacket import PEEPPacket
 
 
 class PEEPProtocol(StackingProtocol):

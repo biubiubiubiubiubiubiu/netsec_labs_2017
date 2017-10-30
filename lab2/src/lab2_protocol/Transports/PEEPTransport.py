@@ -1,8 +1,8 @@
-from playground.network.common import StackingTransport
-from ..PEEPPacket import PEEPPacket
-import time
 import asyncio
-import random
+import time
+
+from playground.network.common import StackingTransport
+from ..Packets.PEEPPacket import PEEPPacket
 
 
 class PEEPTransport(StackingTransport):
