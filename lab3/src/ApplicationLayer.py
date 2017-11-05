@@ -43,7 +43,7 @@ class EchoServerProtocol(asyncio.Protocol):
         self.transport = None
 
     def connection_made(self, transport):
-        print("Received a connection from {}".format(transport.get_extra_info("peername")))
+        print("EchoServer: Received a connection from {}".format(transport.get_extra_info("peername")))
         self.transport = transport
 
     def connection_lost(self, reason=None):
@@ -92,7 +92,7 @@ class EchoClientProtocol(asyncio.Protocol):
         self.__sendMessageActual("__QUIT__")
 
     def connection_made(self, transport):
-        print("Connected to {}".format(transport.get_extra_info("peername")))
+        print("EchoClient: Connected to {}".format(transport.get_extra_info("peername")))
         self.transport = transport
         self.send("Hello world!")
 
