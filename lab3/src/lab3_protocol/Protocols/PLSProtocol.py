@@ -9,6 +9,7 @@ from Crypto import Random
 from ..Packets.PLSPackets import PlsHello, PlsKeyExchange, PlsHandshakeDone, PlsData, PlsClose, PlsBasicType
 import os
 import os.path
+import struct
 
 class PLSProtocol(StackingProtocol):
 
@@ -49,36 +50,59 @@ class PLSProtocol(StackingProtocol):
             print("Initializing PLS layer on " + type(higherProtocol).__name__)
         super().__init__(higherProtocol)
         random_generator = Random.new().read
-        self.preKey = Random.get_random_bytes(48)
-        self.nonce = int.from_bytes(os.urandom(8), byteorder='big')
-        self.peerNonce = None
+        self.clientPreKey = None
+        self.serverPreKey = None
+        self.clientNonce = None
+        self.serverNonce = None
         self.deserializer = PlsBasicType.Deserializer()
-        self.sessionKey = b"Hello PLS! JHU17"
-        self.cipher = AES.new(self.sessionKey, AES.MODE_CTR, counter=Counter.new(128))
+        # self.sessionKey = b"Hello PLS! JHU17"
+        # self.cipher = AES.new(self.sessionKey, AES.MODE_CTR, counter=Counter.new(128))
+
+        self.privateKey = None
+        self.publicKey = None
+        self.peerKey = None
+
+        self.EKc = None
+        self.EKs = None
+        self.IVc = None
+        self.IVs = None
+        self.MKc = None
+        self.MKs = None
+
+        self.encEngine = None
+        self.decEngine = None
+        self.macEngine = None
+        self.verificationEngine = None
 
     def connection_made(self, transport):
-        print("Connection made at PLS layer on " + type(self.higherProtocol()).__name__)
+        self.dbgPrint("Connection made at PLS layer on " + type(self.higherProtocol()).__name__)
         self.transport = transport
         # higherTransport = PLSTransport(self.transport, self)
         # self.higherProtocol().connection_made(higherTransport)
 
     def data_received(self, data):
-        print("Data received at PLS layer on " + type(self.higherProtocol()).__name__)
+        self.dbgPrint("Data received at PLS layer on " + type(self.higherProtocol()).__name__)
         self.higherProtocol().data_received(self.decrypt(data))
 
     def connection_lost(self, exc):
-        print("Connection lost at PLS layer on " + type(self.higherProtocol()).__name__)
+        self.dbgPrint("Connection lost at PLS layer on " + type(self.higherProtocol()).__name__)
         self.higherProtocol().connection_lost(exc)
         self.transport = None
 
     def decrypt(self, data):
-        print("Decrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
-        return self.cipher.decrypt(data)
+        self.dbgPrint("Decrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
+        return self.decEngine.decrypt(data)
 
     def encrypt(self, data):
-        print("Encrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
-        return self.cipher.encrypt(data)
-    
+        self.dbgPrint("Encrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
+        return self.encEngine.encrypt(data)
+
+    def generateNonce(self):
+        return int.from_bytes(Random.get_random_bytes(8), byteorder='big')
+
+    def generatePreKey(self):
+        return Random.get_random_bytes(48)
+
     def createKey(self, name):
         my_path = os.path.abspath(os.path.dirname(__file__))
         path = os.path.join(my_path, ("./keys/" + name + ".key"))
@@ -109,12 +133,61 @@ class PLSProtocol(StackingProtocol):
         signature = signer.sign(hasher)
         return [public_key, signature]
 
-    def verifyValidationHash(self, validationHash, M1, M2, M3, M4):
+    def verifyDerivationHash(self, derivationHash, M1, M2, M3, M4):
         hasher = SHA.new()
-        hasher.update((str(M1) + str(M2) + str(M3) + str(M4)).encode())
-        return validationHash == hasher.digest()
+        hasher.update(b"PLS 1.0" + struct.pack('>Q', M1) + struct.pack('>Q', M2) + M3 + M4)
+        return derivationHash == hasher.digest()
 
     def dbgPrint(self, msg):
         if (self.DEBUG_MODE):
-            print(msg)
+            print(type(self).__name__ + ": " + msg)
 
+    def generateDerivationHash(self):
+        hasher = SHA.new()
+        hasher.update(b"PLS 1.0" + struct.pack('>Q', self.clientNonce) + struct.pack('>Q', self.serverNonce)
+                       + self.clientPreKey + self.serverPreKey)
+        if hasher.digest() == None:
+            print("Ouch!")
+        return hasher.digest()
+
+    def setKeys(self, block_0):
+        blocks = []
+        blocks.append(block_0)
+        for i in range(4):
+            hasher = SHA.new()
+            hasher.update(blocks[i])
+            blocks.append(hasher.digest())
+        keys = b''.join(blocks)[:96]
+        self.EKc = keys[:16]
+        self.EKs = keys[16:32]
+        self.IVc = keys[32:48]
+        self.IVs = keys[48:64]
+        self.MKc = keys[64:80]
+        self.MKs = keys[80:]
+
+    def setEngines(self):
+        raise NotImplementedError
+
+    def makePlsData(self, data):
+        # TODO: get MAC
+        plsData = PlsData.makePlsData(self.encrypt(data), b"Nothing now")
+        return plsData
+
+    def handleError(self, error):
+        self.sendPlsClose(error)
+        self.stop(error)
+
+    def sendPlsClose(self, error=None):
+        if error:
+            self.dbgPrint("Sending PlsClose with error: " + error)
+        else:
+            self.dbgPrint("Sending PlsClose...")
+        plsClose = PlsClose.makePlsClose(error)
+        self.transport.write(plsClose.__serialize__())
+
+    def stop(self, error=None):
+        if error:
+            self.dbgPrint("Closing with error: " + error)
+        else:
+            self.dbgPrint("Closing...")
+        self.transport.close()

@@ -74,7 +74,7 @@ class PlsClose(PlsBasicType):
   ]
 
   @classmethod
-  def makePlsData(cls, error):
+  def makePlsClose(cls, error):
     pkt = cls()
     pkt.Error = error
     return pkt
