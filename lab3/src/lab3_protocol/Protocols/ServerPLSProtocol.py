@@ -25,6 +25,7 @@ class ServerPLSProtocol(PLSProtocol):
             if isinstance(pkt, PlsHello) and self.state == self.STATE_SERVER_HELLO:
                 if self.verify(self.rsaVerifier, pkt.Certs[0], pkt.Certs[1]):
                     self.dbgPrint("Server: PlsHello received!")
+                    self.messages["M1"] = pkt.__serialize__()
                     self.peerKey = RSA.importKey(pkt.Certs[0])
                     self.clientNonce = pkt.Nonce
                     self.dbgPrint("Server: sending PlsHello back to client... Current state: {!r}, nonce Number: {!r}"
@@ -33,6 +34,7 @@ class ServerPLSProtocol(PLSProtocol):
                     self.dbgPrint("server public key: " + str(self.publicKey.exportKey()))
                     self.serverNonce = self.generateNonce()
                     helloPkt = PlsHello.makeHelloPacket(self.serverNonce, self.generateCerts(self.publicKey.exportKey(), self.rsaSigner))
+                    self.messages["M2"] = helloPkt.__serialize__()
                     self.transport.write(helloPkt.__serialize__())
                     self.state = self.STATE_SERVER_KEY_EXCHANGE
                 else:
@@ -40,6 +42,7 @@ class ServerPLSProtocol(PLSProtocol):
             elif isinstance(pkt, PlsKeyExchange) and self.state == self.STATE_SERVER_KEY_EXCHANGE:
                 if self.serverNonce + 1 == pkt.NoncePlusOne:
                     self.dbgPrint("Server: received PlsKeyExchange packet from client")
+                    self.messages["M3"] = pkt.__serialize__()
                     '''
                     TODO:
                         1) get prekey from client side
@@ -50,15 +53,18 @@ class ServerPLSProtocol(PLSProtocol):
                     self.serverPreKey = self.generatePreKey()
                     self.dbgPrint("Server: sending plsKeyExchange packet, prekey: {!r}".format(str(self.serverPreKey)))
                     plsKeyExchangePkt = PlsKeyExchange.makePlsKeyExchange(self.peerKey.encrypt(self.serverPreKey, 32)[0], self.clientNonce + 1)
+                    self.messages["M4"] = plsKeyExchangePkt.__serialize__()
                     self.transport.write(plsKeyExchangePkt.__serialize__())
                     self.state = self.STATE_SERVER_PLS_HANDSHAKE_DONE
                 else:
                     self.handleError("Error: bad nonce in key exchange.")
             elif isinstance(pkt, PlsHandshakeDone) and self.state == self.STATE_SERVER_PLS_HANDSHAKE_DONE:
-                if self.verifyDerivationHash(pkt.ValidationHash, self.clientNonce, self.serverNonce, self.clientPreKey, self.serverPreKey):
+                # if self.verifyDerivationHash(pkt.ValidationHash, self.clientNonce, self.serverNonce, self.clientPreKey, self.serverPreKey):
+                if self.verifyValidationHash(pkt.ValidationHash):
                     self.dbgPrint("Server: plsHandshakeDone packet received from client, validation hash: {!r}".format(pkt.ValidationHash))
                     self.dbgPrint("Server: sending plsHandshakeDone to client and notifying upper layer connection_made")
-                    hashText = self.generateDerivationHash()
+                    hashText = self.generateValidationHash()
+                    # hashText = self.generateDerivationHash()
                     handshakeDonePkt = PlsHandshakeDone.makePlsHandshakeDone(hashText)
                     self.transport.write(handshakeDonePkt.__serialize__())
                     self.setKeys(hashText)

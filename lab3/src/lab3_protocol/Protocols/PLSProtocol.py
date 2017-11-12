@@ -58,6 +58,8 @@ class PLSProtocol(StackingProtocol):
         # self.sessionKey = b"Hello PLS! JHU17"
         # self.cipher = AES.new(self.sessionKey, AES.MODE_CTR, counter=Counter.new(128))
 
+        self.messages = {}
+
         self.privateKey = None
         self.publicKey = None
         self.peerKey = None
@@ -133,10 +135,15 @@ class PLSProtocol(StackingProtocol):
         signature = signer.sign(hasher)
         return [public_key, signature]
 
-    def verifyDerivationHash(self, derivationHash, M1, M2, M3, M4):
+    # def verifyDerivationHash(self, derivationHash, M1, M2, M3, M4):
+    #     hasher = SHA.new()
+    #     hasher.update(b"PLS 1.0" + struct.pack('>Q', M1) + struct.pack('>Q', M2) + M3 + M4)
+    #     return derivationHash == hasher.digest()
+
+    def verifyValidationHash(self, hash):
         hasher = SHA.new()
-        hasher.update(b"PLS 1.0" + struct.pack('>Q', M1) + struct.pack('>Q', M2) + M3 + M4)
-        return derivationHash == hasher.digest()
+        hasher.update(self.messages["M1"] + self.messages["M2"] + self.messages["M3"] + self.messages["M4"])
+        return hash == hasher.digest()
 
     def dbgPrint(self, msg):
         if (self.DEBUG_MODE):
@@ -144,10 +151,13 @@ class PLSProtocol(StackingProtocol):
 
     def generateDerivationHash(self):
         hasher = SHA.new()
-        hasher.update(b"PLS 1.0" + struct.pack('>Q', self.clientNonce) + struct.pack('>Q', self.serverNonce)
+        hasher.update(b"PLS1.0" + struct.pack('>Q', self.clientNonce) + struct.pack('>Q', self.serverNonce)
                        + self.clientPreKey + self.serverPreKey)
-        if hasher.digest() == None:
-            print("Ouch!")
+        return hasher.digest()
+
+    def generateValidationHash(self):
+        hasher = SHA.new()
+        hasher.update(self.messages["M1"] + self.messages["M2"] + self.messages["M3"] + self.messages["M4"])
         return hasher.digest()
 
     def setKeys(self, block_0):
