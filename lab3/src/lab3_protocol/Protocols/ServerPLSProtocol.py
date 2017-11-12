@@ -70,8 +70,12 @@ class ServerPLSProtocol(PLSProtocol):
                     self.handleError("Error: validation hash verification failure.")
             elif isinstance(pkt, PlsData) and self.state == self.STATE_SERVER_TRANSFER:
                 self.dbgPrint("Server: received application data from client, decrypt and notify upper layer")
-                # TODO: verify MAC
-                self.higherProtocol().data_received(self.decrypt(pkt.Ciphertext))
+                if self.verifyPlsData(pkt.Ciphertext, pkt.Mac):
+                    self.dbgPrint("Verification succeeded, sending data to upper layer...")
+                    self.higherProtocol().data_received(self.decrypt(pkt.Ciphertext))
+                else:
+                    # self.dbgPrint("Verification failure, discarded.")
+                    self.handleError("Error: MAC verification failure.")
             elif isinstance(pkt, PlsClose):
                 self.dbgPrint("PlsClose received, closing...")
                 self.transport.close()
@@ -86,5 +90,5 @@ class ServerPLSProtocol(PLSProtocol):
         # TODO: fix counter initial value
         self.encEngine = AES.new(self.EKs, AES.MODE_CTR, counter=Counter.new(128, initial_value=struct.unpack('>Q', self.IVs[:8])[0]))
         self.decEngine = AES.new(self.EKc, AES.MODE_CTR, counter=Counter.new(128, initial_value=struct.unpack('>Q', self.IVc[:8])[0]))
-        self.macEngine = HMAC.new(self.MKc)
-        self.verificationEngine = HMAC.new(self.MKs)
+        self.macEngine = HMAC.new(self.MKs)
+        self.verificationEngine = HMAC.new(self.MKc)

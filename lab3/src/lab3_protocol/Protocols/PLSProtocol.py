@@ -169,9 +169,19 @@ class PLSProtocol(StackingProtocol):
         raise NotImplementedError
 
     def makePlsData(self, data):
-        # TODO: get MAC
-        plsData = PlsData.makePlsData(self.encrypt(data), b"Nothing now")
+        ciphertext = self.encrypt(data)
+        # engine = self.macEngine.copy()
+        engine = self.macEngine
+        engine.update(ciphertext)
+        mac = engine.digest()
+        plsData = PlsData.makePlsData(ciphertext, mac)
         return plsData
+
+    def verifyPlsData(self, ciphertext, mac):
+        # engine = self.verificationEngine.copy()
+        engine = self.verificationEngine
+        engine.update(ciphertext)
+        return mac == engine.digest()
 
     def handleError(self, error):
         self.sendPlsClose(error)

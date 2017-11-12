@@ -80,8 +80,12 @@ class ClientPLSProtocol(PLSProtocol):
                     self.handleError("Error: validation hash verification failure.")
             elif isinstance(pkt, PlsData) and self.state == self.STATE_CLIENT_TRANSFER:
                 self.dbgPrint("Client: received application data from server")
-                # TODO: verify MAC
-                self.higherProtocol().data_received(self.decrypt(pkt.Ciphertext))
+                if self.verifyPlsData(pkt.Ciphertext, pkt.Mac):
+                    self.dbgPrint("Verification succeeded, sending data to upper layer...")
+                    self.higherProtocol().data_received(self.decrypt(pkt.Ciphertext))
+                else:
+                    # self.dbgPrint("Verification failure, discarded.")
+                    self.handleError("Error: MAC verification failure.")
             elif isinstance(pkt, PlsClose):
                 self.dbgPrint("PlsClose received, closing...")
                 self.stop(pkt.Error)
