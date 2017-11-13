@@ -6,16 +6,16 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-import struct
+import codecs
 
 
 class ClientPLSProtocol(PLSProtocol):
     def __init__(self, higherProtocol=None):
         super().__init__(higherProtocol)
-        self.importKeys("keys", "client")
 
     def connection_made(self, transport):
         super().connection_made(transport)
+        self.importKeys("keys", "client")
         self.state = self.STATE_CLIENT_HELLO
         self.dbgPrint(
             "Client: Sending Hello message, current state: {!r}, nonce number: {!r}".format(self.STATE_DESC[self.state],
@@ -98,8 +98,8 @@ class ClientPLSProtocol(PLSProtocol):
     def setEngines(self):
         # TODO: fix counter initial value
         self.encEngine = AES.new(self.EKc, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=struct.unpack('>Q', self.IVc[:8])[0]))
+                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVc, 'hex'),16)))
         self.decEngine = AES.new(self.EKs, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=struct.unpack('>Q', self.IVs[:8])[0]))
+                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVs, 'hex'),16)))
         self.macEngine = HMAC.new(self.MKc)
         self.verificationEngine = HMAC.new(self.MKs)

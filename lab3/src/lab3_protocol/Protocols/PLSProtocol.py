@@ -4,7 +4,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA
 from Crypto import Random
 from ..Packets.PLSPackets import PlsData, PlsClose, PlsBasicType
-import struct
+from ..CertFactory import *
 
 
 class PLSProtocol(StackingProtocol):
@@ -105,22 +105,15 @@ class PLSProtocol(StackingProtocol):
         )
 
     def importKeys(self, path, privateName):
-        privatePath = path + "/" + privateName + "/private.key"
-        with open(privatePath) as f:
-            rawKey = f.read()
-        self.privateKey = RSA.importKey(rawKey)
+        addr = self.transport.get_extra_info('sockname')[0]
+        rawKey = getPrivateKeyForAddr(addr)
+        self.privateKey = RSA.importKey(rawKey.encode("utf-8"))
 
-        certPath = path + "/" + privateName + "/cert.crt"
-        cert = CipherUtil.loadCertFromFile(certPath)
-        self.certs.append(cert)
-        self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(cert))
+        rawCerts = getCertsForAddr(addr)
+        self.certs = [CipherUtil.getCertFromBytes(c.encode("utf-8")) for c in rawCerts]
+        self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(self.certs[0]))
 
-        groupCertPath = path + "/group.crt"
-        groupCert = CipherUtil.loadCertFromFile(groupCertPath)
-        self.certs.append(groupCert)
-
-        rootCertPath = path + "/root.crt"
-        self.rootCert = CipherUtil.loadCertFromFile(rootCertPath)
+        self.rootCert = CipherUtil.getCertFromBytes(getRootCert().encode("utf-8"))
 
     def verifyCerts(self, certs):
         certs.append(self.rootCert)
