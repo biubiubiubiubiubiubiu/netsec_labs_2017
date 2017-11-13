@@ -1,19 +1,14 @@
-from playground.network.common import StackingProtocol, StackingTransport
-from ..Transports.PLSTransport import PLSTransport
-from Crypto.Cipher import AES
+from playground.network.common import StackingProtocol
+from playground.common import CipherUtil
 from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import HMAC, SHA256, SHA
-from Crypto.Util import Counter
+from Crypto.Hash import SHA
 from Crypto import Random
-from ..Packets.PLSPackets import PlsHello, PlsKeyExchange, PlsHandshakeDone, PlsData, PlsClose, PlsBasicType
-import os
-import os.path
+from ..Packets.PLSPackets import PlsData, PlsClose, PlsBasicType
 import struct
 
-class PLSProtocol(StackingProtocol):
 
-    DEBUG_MODE = True
+class PLSProtocol(StackingProtocol):
+    DEBUG_MODE = False
     # State Definitions
     STATE_DEFAULT = 0
 
@@ -43,26 +38,24 @@ class PLSProtocol(StackingProtocol):
         204: "STATE_CLIENT_CLOSED"
     }
 
-    
-
     def __init__(self, higherProtocol=None):
         if higherProtocol:
             print("Initializing PLS layer on " + type(higherProtocol).__name__)
         super().__init__(higherProtocol)
-        random_generator = Random.new().read
         self.clientPreKey = None
         self.serverPreKey = None
         self.clientNonce = None
         self.serverNonce = None
         self.deserializer = PlsBasicType.Deserializer()
-        # self.sessionKey = b"Hello PLS! JHU17"
-        # self.cipher = AES.new(self.sessionKey, AES.MODE_CTR, counter=Counter.new(128))
 
         self.messages = {}
 
         self.privateKey = None
+        self.rootCert = None
+        self.certs = []
         self.publicKey = None
         self.peerKey = None
+        self.peerAddress = None
 
         self.EKc = None
         self.EKs = None
@@ -79,8 +72,7 @@ class PLSProtocol(StackingProtocol):
     def connection_made(self, transport):
         self.dbgPrint("Connection made at PLS layer on " + type(self.higherProtocol()).__name__)
         self.transport = transport
-        # higherTransport = PLSTransport(self.transport, self)
-        # self.higherProtocol().connection_made(higherTransport)
+        self.peerAddress = transport.get_extra_info('peername')
 
     def data_received(self, data):
         self.dbgPrint("Data received at PLS layer on " + type(self.higherProtocol()).__name__)
@@ -103,42 +95,43 @@ class PLSProtocol(StackingProtocol):
         return int.from_bytes(Random.get_random_bytes(8), byteorder='big')
 
     def generatePreKey(self):
-        return Random.get_random_bytes(48)
+        return Random.get_random_bytes(16)
 
-    def createKey(self, name):
-        my_path = os.path.abspath(os.path.dirname(__file__))
-        path = os.path.join(my_path, ("./keys/" + name + ".key"))
-        # import local private/public key pair
-        with open(path) as f:
-            rawKey = f.read() 
-        private_key = RSA.importKey(rawKey)
-        public_key = private_key.publickey()
-        # import third party key
-        third_path = os.path.join(my_path, ("./keys/thirdparty.key"))
-        with open(third_path) as f:
+    def serializePublicKeyFromCert(self, cert):
+        from cryptography.hazmat.primitives import serialization
+        return cert.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    def importKeys(self, path, privateName):
+        privatePath = path + "/" + privateName + "/private.key"
+        with open(privatePath) as f:
             rawKey = f.read()
-        third_private_key = RSA.importKey(rawKey)
-        third_public_key = third_private_key.publickey()
-        rsaSigner = PKCS1_v1_5.new(third_private_key)
-        rsaVerifier = PKCS1_v1_5.new(third_public_key)
+        self.privateKey = RSA.importKey(rawKey)
 
-        return private_key, public_key, rsaSigner, rsaVerifier
+        certPath = path + "/" + privateName + "/cert.crt"
+        cert = CipherUtil.loadCertFromFile(certPath)
+        self.certs.append(cert)
+        self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(cert))
 
-    def verify(self, verifier, data, signature):
-        hasher = SHA256.new()
-        hasher.update(data)
-        return verifier.verify(hasher, signature)
+        groupCertPath = path + "/group.crt"
+        groupCert = CipherUtil.loadCertFromFile(groupCertPath)
+        self.certs.append(groupCert)
 
-    def generateCerts(self, public_key, signer):
-        hasher = SHA256.new()
-        hasher.update(public_key)
-        signature = signer.sign(hasher)
-        return [public_key, signature]
+        rootCertPath = path + "/root.crt"
+        self.rootCert = CipherUtil.loadCertFromFile(rootCertPath)
 
-    # def verifyDerivationHash(self, derivationHash, M1, M2, M3, M4):
-    #     hasher = SHA.new()
-    #     hasher.update(b"PLS 1.0" + struct.pack('>Q', M1) + struct.pack('>Q', M2) + M3 + M4)
-    #     return derivationHash == hasher.digest()
+    def verifyCerts(self, certs):
+        certs.append(self.rootCert)
+
+        groupAddress = CipherUtil.getCertSubject(certs[1])["commonName"]
+        peerAddressPrefix = ".".join([str(i) for i in self.peerAddress[0].split(".")][:3])
+
+        if groupAddress != peerAddressPrefix:
+            self.dbgPrint("Error: group address mismatch: " + groupAddress + ", " + peerAddressPrefix)
+
+        return CipherUtil.ValidateCertChainSigs(certs) and groupAddress == peerAddressPrefix
 
     def verifyValidationHash(self, hash):
         hasher = SHA.new()
@@ -151,8 +144,15 @@ class PLSProtocol(StackingProtocol):
 
     def generateDerivationHash(self):
         hasher = SHA.new()
-        hasher.update(b"PLS1.0" + struct.pack('>Q', self.clientNonce) + struct.pack('>Q', self.serverNonce)
-                       + self.clientPreKey + self.serverPreKey)
+        hasher.update(
+            b"PLS1.0" + self.clientNonce.to_bytes(8, byteorder='big') + self.serverNonce.to_bytes(8, byteorder='big')
+            + self.clientPreKey + self.serverPreKey)
+        self.dbgPrint(str(b"PLS1.0"))
+        self.dbgPrint(str(self.clientNonce.to_bytes(8, byteorder='big')))
+        self.dbgPrint(str(self.serverNonce.to_bytes(8, byteorder='big')))
+        self.dbgPrint(str(self.clientPreKey))
+        self.dbgPrint(str(self.serverPreKey))
+        self.dbgPrint("Derivation hash: " + hasher.hexdigest())
         return hasher.digest()
 
     def generateValidationHash(self):

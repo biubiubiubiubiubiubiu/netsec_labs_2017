@@ -1,3 +1,13 @@
+# Lab 3 Keys
+keys/
+
+# PyCharm
+.idea/
+
+# OS X
+.DS_Store
+
+# Template
 # Created by https://www.gitignore.io/api/python
 
 ### Python ###
@@ -104,9 +114,3 @@ venv.bak/
 .mypy_cache/
 
 # End of https://www.gitignore.io/api/python
-
-# PyCharm
-.idea/
-
-# OS X
-.DS_Store
