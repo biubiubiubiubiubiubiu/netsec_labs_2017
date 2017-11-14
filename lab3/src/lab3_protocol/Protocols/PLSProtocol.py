@@ -8,6 +8,9 @@ from ..CertFactory import *
 
 
 class PLSProtocol(StackingProtocol):
+    NONCE_LENGTH_BYTES = 8
+    PRE_KEY_LENGTH_BYTES = 16
+
     DEBUG_MODE = False
     # State Definitions
     STATE_DEFAULT = 0
@@ -92,10 +95,10 @@ class PLSProtocol(StackingProtocol):
         return self.encEngine.encrypt(data)
 
     def generateNonce(self):
-        return int.from_bytes(Random.get_random_bytes(8), byteorder='big')
+        return int.from_bytes(Random.get_random_bytes(self.NONCE_LENGTH_BYTES), byteorder='big')
 
     def generatePreKey(self):
-        return Random.get_random_bytes(16)
+        return Random.get_random_bytes(self.PRE_KEY_LENGTH_BYTES)
 
     def serializePublicKeyFromCert(self, cert):
         from cryptography.hazmat.primitives import serialization
@@ -118,34 +121,36 @@ class PLSProtocol(StackingProtocol):
     def verifyCerts(self, certs):
         certs.append(self.rootCert)
 
-        groupAddress = CipherUtil.getCertSubject(certs[1])["commonName"]
-        peerAddressPrefix = ".".join([str(i) for i in self.peerAddress[0].split(".")][:3])
+        commonName = CipherUtil.getCertSubject(certs[0])["commonName"]
+        groupCommonName = CipherUtil.getCertSubject(certs[1])["commonName"]
+        peerAddressList = [str(i) for i in self.peerAddress[0].split(".")]
+        peerAddress = ".".join(peerAddressList)
+        peerAddressPrefix = ".".join(peerAddressList[:3])
 
-        if groupAddress != peerAddressPrefix:
-            self.dbgPrint("Error: group address mismatch: " + groupAddress + ", " + peerAddressPrefix)
-
-        return CipherUtil.ValidateCertChainSigs(certs) and groupAddress == peerAddressPrefix
+        if commonName != peerAddress:
+            self.dbgPrint("Error: address mismatch: " + commonName + ", " + peerAddress)
+            return False
+        elif groupCommonName != peerAddressPrefix:
+            self.dbgPrint("Error: group address mismatch: " + groupCommonName + ", " + peerAddressPrefix)
+            return False
+        else:
+            return CipherUtil.ValidateCertChainSigs(certs)
 
     def verifyValidationHash(self, hash):
         hasher = SHA.new()
         hasher.update(self.messages["M1"] + self.messages["M2"] + self.messages["M3"] + self.messages["M4"])
         return hash == hasher.digest()
 
-    def dbgPrint(self, msg):
-        if (self.DEBUG_MODE):
+    def dbgPrint(self, msg, forced=False):
+        if (self.DEBUG_MODE or forced):
             print(type(self).__name__ + ": " + msg)
 
     def generateDerivationHash(self):
         hasher = SHA.new()
         hasher.update(
-            b"PLS1.0" + self.clientNonce.to_bytes(8, byteorder='big') + self.serverNonce.to_bytes(8, byteorder='big')
+            b"PLS1.0" + self.clientNonce.to_bytes(self.NONCE_LENGTH_BYTES, byteorder='big')
+            + self.serverNonce.to_bytes(self.NONCE_LENGTH_BYTES, byteorder='big')
             + self.clientPreKey + self.serverPreKey)
-        self.dbgPrint(str(b"PLS1.0"))
-        self.dbgPrint(str(self.clientNonce.to_bytes(8, byteorder='big')))
-        self.dbgPrint(str(self.serverNonce.to_bytes(8, byteorder='big')))
-        self.dbgPrint(str(self.clientPreKey))
-        self.dbgPrint(str(self.serverPreKey))
-        self.dbgPrint("Derivation hash: " + hasher.hexdigest())
         return hasher.digest()
 
     def generateValidationHash(self):
@@ -200,7 +205,7 @@ class PLSProtocol(StackingProtocol):
 
     def stop(self, error=None):
         if error:
-            self.dbgPrint("Closing with error: " + error)
+            self.dbgPrint("Closing with error: " + error, True)
         else:
             self.dbgPrint("Closing...")
         self.transport.close()

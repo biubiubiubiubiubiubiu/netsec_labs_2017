@@ -45,7 +45,7 @@ class ClientPLSProtocol(PLSProtocol):
                     self.peerKey = RSA.importKey(self.serializePublicKeyFromCert(peerCerts[0]))
                     self.clientPreKey = self.generatePreKey()
                     self.dbgPrint("Client: sending plsKeyExchage Packet. current state: {!r}, prekey: {!r}".format(
-                        self.STATE_DESC[self.state], str(self.clientPreKey)))
+                        self.STATE_DESC[self.state], self.clientPreKey.hex()))
                     plsKeyExchangePkt = PlsKeyExchange.makePlsKeyExchange(
                         self.peerKey.encrypt(self.clientPreKey, 32)[0], self.serverNonce + 1)
                     self.messages["M3"] = plsKeyExchangePkt.__serialize__()
@@ -57,18 +57,22 @@ class ClientPLSProtocol(PLSProtocol):
                     self.dbgPrint("Client: received PlsKeyExchange packet from server")
                     self.messages["M4"] = pkt.__serialize__()
                     self.serverPreKey = self.privateKey.decrypt(pkt.PreKey)
-                    self.dbgPrint("Client: server prekey received: " + str(self.serverPreKey))
-                    # change the state
-                    self.state = self.STATE_CLIENT_PLS_HANDSHAKE_DONE
-                    # Create hash from M1 - M4, send back handshakeDone packet
-                    hashText = self.generateValidationHash()
-                    self.dbgPrint("Client: sending plsHandShakeDone packet, validationcode: {!r}".format(hashText))
-                    handshakeDonePkt = PlsHandshakeDone.makePlsHandshakeDone(hashText)
-                    self.transport.write(handshakeDonePkt.__serialize__())
+                    if len(self.serverPreKey) != self.PRE_KEY_LENGTH_BYTES:
+                        self.handleError("Error: Bad server pre-key with length = " + str(len(self.serverPreKey) * 8)
+                                         + " bits, wrong RSA decryption?")
+                    else:
+                        self.dbgPrint("Client: server prekey received: " + self.serverPreKey.hex())
+                        # change the state
+                        self.state = self.STATE_CLIENT_PLS_HANDSHAKE_DONE
+                        # Create hash from M1 - M4, send back handshakeDone packet
+                        hashText = self.generateValidationHash()
+                        self.dbgPrint("Client: sending plsHandShakeDone packet...")
+                        handshakeDonePkt = PlsHandshakeDone.makePlsHandshakeDone(hashText)
+                        self.transport.write(handshakeDonePkt.__serialize__())
 
-                    # Enough info to generate keys and initialize ciphers
-                    self.setKeys(self.generateDerivationHash())
-                    self.setEngines()
+                        # Enough info to generate keys and initialize ciphers
+                        self.setKeys(self.generateDerivationHash())
+                        self.setEngines()
                 else:
                     self.handleError("Error: bad nonce in key exchange.")
             elif isinstance(pkt, PlsHandshakeDone) and self.state == self.STATE_CLIENT_PLS_HANDSHAKE_DONE:
@@ -98,8 +102,8 @@ class ClientPLSProtocol(PLSProtocol):
     def setEngines(self):
         # TODO: fix counter initial value
         self.encEngine = AES.new(self.EKc, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVc, 'hex'),16)))
+                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVc, 'hex'), 16)))
         self.decEngine = AES.new(self.EKs, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVs, 'hex'),16)))
+                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVs, 'hex'), 16)))
         self.macEngine = HMAC.new(self.MKc)
         self.verificationEngine = HMAC.new(self.MKs)
