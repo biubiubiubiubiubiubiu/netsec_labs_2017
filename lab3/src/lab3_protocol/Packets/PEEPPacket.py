@@ -64,9 +64,11 @@ class PEEPPacket(PacketType):
         return pkt
 
     @classmethod
-    def makeAckPacket(cls, ack):
+    def makeAckPacket(cls, seq, ack):
         pkt = cls()
         pkt.Type = cls.TYPE_ACK
+        if seq:
+            pkt.SequenceNumber = seq
         pkt.Acknowledgement = ack
         pkt.updateChecksum()
         return pkt

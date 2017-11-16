@@ -38,16 +38,18 @@ class ServerProtocol(PEEPProtocol):
                             PEEPPacket.TYPE_ACK,
                             self.STATE_SERVER_SYN):
                         # special ack for syn-ack
-                        if pkt.Acknowledgement == self.seqNum:
+                        if pkt.Acknowledgement == self.seqNum and pkt.SequenceNumber == self.partnerSeqNum:
                             self.dbgPrint("Received ACK packet with acknowledgement number " +
                                           str(pkt.Acknowledgement))
+                            self.partnerSeqNum = pkt.SequenceNumber + 1
                             self.state = self.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
                             self.tasks.append(asyncio.ensure_future(self.scanCache()))
                         else:
-                            self.dbgPrint("Server: Wrong ACK packet: ACK number: {!r}, expected: {!r}".format(
-                                pkt.Acknowledgement, self.seqNum))
+                            self.dbgPrint(
+                                "Server: Wrong ACK packet: ACK number: {!r}, seq number: {!r}, expected: {!r}, {!r}".format(
+                                    pkt.Acknowledgement, pkt.SequenceNumber, self.seqNum, self.partnerSeqNum))
 
 
                     elif pkt.Type == PEEPPacket.TYPE_ACK:

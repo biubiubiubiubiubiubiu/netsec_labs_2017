@@ -1,7 +1,9 @@
+import asyncio
+
 from .PEEPPacket import PEEPPacket
 from .PEEPTransports.PEEPTransport import PEEPTransport
+
 from .PEEPProtocol import PEEPProtocol
-import asyncio
 
 
 class ClientProtocol(PEEPProtocol):
@@ -15,6 +17,7 @@ class ClientProtocol(PEEPProtocol):
         super().connection_made(transport)
         if self.state == self.STATE_CLIENT_INITIAL_SYN:
             self.sendSyn()
+            self.seqNum += 1
             self.state = self.STATE_CLIENT_SYN_ACK
             self.tasks.append(asyncio.ensure_future(
                 self.checkState([self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSING, self.STATE_CLIENT_CLOSED],
@@ -28,13 +31,13 @@ class ClientProtocol(PEEPProtocol):
                     if pkt.Type == PEEPPacket.TYPE_SYN_ACK:
                         if self.state == self.STATE_CLIENT_SYN_ACK:
                             # check ack num
-                            if (pkt.Acknowledgement >= self.seqNum + 1):
+                            if (pkt.Acknowledgement >= self.seqNum):
                                 self.dbgPrint("Received SYN-ACK packet with sequence number " +
                                               str(pkt.SequenceNumber) + ", ack number " +
                                               str(pkt.Acknowledgement))
                                 self.state = self.STATE_CLIENT_TRANSMISSION
                                 self.partnerSeqNum = pkt.SequenceNumber + 1
-                                self.sendAck()
+                                self.sendAck(self.initialSeq + 1)
                                 self.seqNum += 1
                                 higherTransport = PEEPTransport(self.transport, self)
                                 self.higherProtocol().connection_made(higherTransport)
@@ -44,7 +47,7 @@ class ClientProtocol(PEEPProtocol):
                                     pkt.Acknowledgement, self.seqNum + 1))
                         else:
                             # duplicate, send ack anyway
-                            self.sendAck()
+                            self.sendAck(self.initialSeq + 1)
 
                     elif pkt.Type == PEEPPacket.TYPE_ACK:
                         if self.state in (self.STATE_CLIENT_TRANSMISSION, self.STATE_CLIENT_CLOSING):

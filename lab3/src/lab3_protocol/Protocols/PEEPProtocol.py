@@ -52,6 +52,7 @@ class PEEPProtocol(StackingProtocol):
         self.transport = None
         self.deserializer = PEEPPacket.Deserializer()
         self.seqNum = int.from_bytes(os.urandom(4), byteorder='big')
+        self.initialSeq = self.seqNum
         self.partnerSeqNum = None
 
         self.sentDataCache = {}
@@ -84,7 +85,7 @@ class PEEPProtocol(StackingProtocol):
         future.cancel()
 
     def sendSyn(self):
-        synPacket = PEEPPacket.makeSynPacket(self.seqNum)
+        synPacket = PEEPPacket.makeSynPacket(self.initialSeq)
         self.dbgPrint("Sending SYN packet with sequence number " + str(self.seqNum) +
                       ", current state " + self.STATE_DESC[self.state])
         self.writeWithRate(synPacket, "Syn")
@@ -96,8 +97,8 @@ class PEEPProtocol(StackingProtocol):
 
         self.writeWithRate(synAckPacket, "SynAck")
 
-    def sendAck(self):
-        ackPacket = PEEPPacket.makeAckPacket(self.partnerSeqNum)
+    def sendAck(self, seqNum=None):
+        ackPacket = PEEPPacket.makeAckPacket(seqNum, self.partnerSeqNum)
         self.dbgPrint("Sending ACK packet with acknowledgement " + str(self.partnerSeqNum) +
                       ", current state " + self.STATE_DESC[self.state])
         self.writeWithRate(ackPacket, "Ack")
@@ -141,7 +142,7 @@ class PEEPProtocol(StackingProtocol):
 
         # send an ack anyway
         acknowledgement = self.partnerSeqNum
-        ackPacket = PEEPPacket.makeAckPacket(acknowledgement)
+        ackPacket = PEEPPacket.makeAckPacket(None, acknowledgement)
         self.dbgPrint("Sending ACK packet with acknowledgement " + str(acknowledgement) +
                       ", current state " + self.STATE_DESC[self.state])
         self.writeWithRate(ackPacket, "Ack")
