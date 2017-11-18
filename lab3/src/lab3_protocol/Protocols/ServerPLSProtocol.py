@@ -3,8 +3,8 @@ from ..Transports.PLSTransport import PLSTransport
 from .PLSProtocol import PLSProtocol
 from playground.common import CipherUtil
 from Crypto.PublicKey import RSA
-from Crypto.Hash import HMAC
-from Crypto.Cipher import AES
+from Crypto.Hash import HMAC, SHA
+from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util import Counter
 import codecs
 
@@ -28,7 +28,8 @@ class ServerPLSProtocol(PLSProtocol):
                 if self.verifyCerts(peerCerts + [self.rootCert]):
                     self.dbgPrint("Server: PlsHello received!")
                     self.messages["M1"] = pkt.__serialize__()
-                    self.peerKey = RSA.importKey(self.serializePublicKeyFromCert(peerCerts[0]))
+                    self.peerPublicKey = RSA.importKey(self.serializePublicKeyFromCert(peerCerts[0]))
+                    self.peerPublicCipher = PKCS1_OAEP.new(self.peerPublicKey)
                     self.clientNonce = pkt.Nonce
 
                     # Make PlsHello and send back
@@ -47,7 +48,7 @@ class ServerPLSProtocol(PLSProtocol):
                 if self.serverNonce + 1 == pkt.NoncePlusOne:
                     self.dbgPrint("Server: received PlsKeyExchange packet from client")
                     self.messages["M3"] = pkt.__serialize__()
-                    self.clientPreKey = self.privateKey.decrypt(pkt.PreKey)
+                    self.clientPreKey = self.privateCipher.decrypt(pkt.PreKey)
                     if len(self.clientPreKey) != self.PRE_KEY_LENGTH_BYTES:
                         self.handleError("Error: Bad client pre-key with length = " + str(len(self.clientPreKey) * 8)
                                          + " bits, wrong RSA decryption?")
@@ -59,7 +60,7 @@ class ServerPLSProtocol(PLSProtocol):
                         self.dbgPrint(
                             "Server: sending plsKeyExchange packet, prekey: {!r}".format(self.serverPreKey.hex()))
                         plsKeyExchangePkt = PlsKeyExchange.makePlsKeyExchange(
-                            self.peerKey.encrypt(self.serverPreKey, 32)[0], self.clientNonce + 1)
+                            self.peerPublicCipher.encrypt(self.serverPreKey), self.clientNonce + 1)
                         self.messages["M4"] = plsKeyExchangePkt.__serialize__()
                         self.transport.write(plsKeyExchangePkt.__serialize__())
                         self.state = self.STATE_SERVER_PLS_HANDSHAKE_DONE
@@ -104,5 +105,5 @@ class ServerPLSProtocol(PLSProtocol):
                                  counter=Counter.new(128, initial_value=int(codecs.encode(self.IVs, 'hex'), 16)))
         self.decEngine = AES.new(self.EKc, AES.MODE_CTR,
                                  counter=Counter.new(128, initial_value=int(codecs.encode(self.IVc, 'hex'), 16)))
-        self.macEngine = HMAC.new(self.MKs)
-        self.verificationEngine = HMAC.new(self.MKc)
+        self.macEngine = HMAC.new(self.MKs, digestmod=SHA)
+        self.verificationEngine = HMAC.new(self.MKc, digestmod=SHA)

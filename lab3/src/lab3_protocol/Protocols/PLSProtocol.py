@@ -3,6 +3,7 @@ from playground.common import CipherUtil
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA
 from Crypto import Random
+from Crypto.Cipher import PKCS1_OAEP
 from ..Packets.PLSPackets import PlsData, PlsClose, PlsBasicType
 from ..CertFactory import *
 
@@ -54,10 +55,12 @@ class PLSProtocol(StackingProtocol):
         self.messages = {}
 
         self.privateKey = None
+        self.privateCipher = None
         self.rootCert = None
         self.certs = []
         self.publicKey = None
-        self.peerKey = None
+        self.peerPublicKey = None
+        self.peerPublicCipher = None
         self.peerAddress = None
 
         self.EKc = None
@@ -111,10 +114,12 @@ class PLSProtocol(StackingProtocol):
         addr = self.transport.get_extra_info('sockname')[0]
         rawKey = getPrivateKeyForAddr(addr)
         self.privateKey = RSA.importKey(rawKey.encode("utf-8"))
+        self.privateCipher = PKCS1_OAEP.new(self.privateKey)
 
         rawCerts = getCertsForAddr(addr)
         self.certs = [CipherUtil.getCertFromBytes(c.encode("utf-8")) for c in rawCerts]
         self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(self.certs[0]))
+
 
         self.rootCert = CipherUtil.getCertFromBytes(getRootCert().encode("utf-8"))
 
