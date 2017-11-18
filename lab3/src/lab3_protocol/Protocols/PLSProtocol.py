@@ -183,16 +183,16 @@ class PLSProtocol(StackingProtocol):
 
     def makePlsData(self, data):
         ciphertext = self.encrypt(data)
-        # engine = self.macEngine.copy()
-        engine = self.macEngine
+        engine = self.macEngine.copy()
+        # engine = self.macEngine
         engine.update(ciphertext)
         mac = engine.digest()
         plsData = PlsData.makePlsData(ciphertext, mac)
         return plsData
 
     def verifyPlsData(self, ciphertext, mac):
-        # engine = self.verificationEngine.copy()
-        engine = self.verificationEngine
+        engine = self.verificationEngine.copy()
+        # engine = self.verificationEngine
         engine.update(ciphertext)
         return mac == engine.digest()
 
