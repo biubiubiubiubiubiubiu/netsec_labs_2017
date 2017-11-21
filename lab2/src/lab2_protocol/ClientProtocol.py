@@ -38,7 +38,8 @@ class ClientProtocol(PEEPProtocol):
                                 self.state = self.STATE_CLIENT_TRANSMISSION
                                 self.partnerSeqNum = pkt.SequenceNumber + 1
                                 self.sendAck(self.initialSeq + 1)
-                                self.seqNum += 1
+                                # Do not change seqNum; follow the specifications
+                                # self.seqNum += 1
                                 higherTransport = PEEPTransport(self.transport, self)
                                 self.higherProtocol().connection_made(higherTransport)
                                 self.tasks.append(asyncio.ensure_future(self.scanCache()))
