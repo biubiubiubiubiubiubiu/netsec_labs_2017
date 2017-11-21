@@ -41,7 +41,8 @@ class ServerProtocol(PEEPProtocol):
                         if pkt.Acknowledgement == self.seqNum and pkt.SequenceNumber == self.partnerSeqNum:
                             self.dbgPrint("Received ACK packet with acknowledgement number " +
                                           str(pkt.Acknowledgement))
-                            self.partnerSeqNum = pkt.SequenceNumber + 1
+                            # Do not change seqNum; follow the specifications
+                            # self.partnerSeqNum = pkt.SequenceNumber + 1
                             self.state = self.STATE_SERVER_TRANSMISSION
                             higherTransport = PEEPTransport(self.transport, self)
                             self.higherProtocol().connection_made(higherTransport)
