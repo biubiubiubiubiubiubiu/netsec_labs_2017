@@ -92,7 +92,8 @@ class ClientPLSProtocol(PLSProtocol):
                     self.dbgPrint("Verification succeeded, sending data to upper layer...")
                     self.higherProtocol().data_received(self.decrypt(pkt.Ciphertext))
                 else:
-                    self.handleError("Error: data verification failure.")
+                    # self.handleError("Error: data verification failure.")
+                    self.dbgPrint("Data MAC verification error, discarded.")
             elif isinstance(pkt, PlsClose):
                 self.dbgPrint("PlsClose received, closing...")
                 self.stop(pkt.Error)
