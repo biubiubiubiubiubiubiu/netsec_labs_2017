@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is modified by Seth Nielson for creating P-RFC's
+    (Playground-RFC's). -->
+<!-- This template is for creating an Internet Draft using xml2rfc,
+    which is available here: http://xml2rfc.ietf.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+    There has to be one entity for each item to be referenced.
+    An alternate method (rfc include) is described in the references. --><!ENTITY RFC2119 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2360 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2360.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY RFC5226 SYSTEM "http://xml2rfc.tools.ietf.org/public/rfc/bibxml/reference.RFC.5226.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+    please see http://xml2rfc.ietf.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+    (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+    (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="exp" docName="rfc5246" ipr="trust200902" number="5246">
+    <!-- category values: std, bcp, info, exp, and historic
+    ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
+       or pre5378Trust200902, playgroundWinter201501
+    you can add the attributes updates="NNNN" and obsoletes="NNNN"
+    they will automatically be output with "(if approved)" -->
+
+    <!-- ***** FRONT MATTER ***** -->
+
+    <front>
+        <!-- The abbreviated title is used in the page header - it is only necessary if the
+        full title is longer than 39 characters -->
+
+        <title abbrev="PRFC's">Playground Request For Comments</title>
+
+        <!-- add 'role="editor"' below for the editors if appropriate -->
+
+        <!-- Another author who claims to be an editor -->
+
+        <author fullname="Te Meng" initials="T." role="editor" surname="Meng">
+
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>tmeng4@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Ruofan Shen" initials="R." role="editor" surname="Ruofan">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>rshen3@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Cuiqing Li" initials="C." role="editor" surname="Li">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+                <email>cli92@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <author fullname="Menghan Bai" initials="M." role="editor" surname="Bai">
+            <organization>JHU Network Security Fall 2017</organization>
+
+            <address>
+                <postal>
+                    <street>JHU 160 Malone Hall/3400 North Charles St.</street>
+
+                    <!-- Reorder these if your country does things differently -->
+
+                    <city>Baltimore</city>
+
+                    <region>MD</region>
+
+                    <code>21218</code>
+
+                    <country>USA</country>
+                </postal>
+
+                <email>mbai4@jhu.edu</email>
+
+                <!-- uri and facsimile elements may also be added -->
+            </address>
+        </author>
+
+        <date year="2017"/>
+
+        <!-- If the month and year are both specified and are the current ones, xml2rfc will fill
+        in the current day for you. If only the current year is specified, xml2rfc will fill
+     in the current day and month for you. If the year is not the current one, it is
+     necessary to specify at least a month (xml2rfc assumes day="1" if not specified for the
+     purpose of calculating the expiry date).  With drafts it is normally sufficient to
+     specify just the year. -->
+
+        <!-- Meta-data Declarations -->
+
+        <area>General</area>
+
+        <workgroup>Playground Experiment Director</workgroup>
+
+        <!-- WG name at the upperleft corner of the doc,
+        IETF is fine for individual submissions.
+     If this element is not present, the default is "Network Working Group",
+        which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+        <keyword>PRFC</keyword>
+
+        <!-- Keywords will be incorporated into HTML output
+        files in a meta tag but they have no effect on text or nroff
+        output. If you submit your draft to the RFC Editor, the
+        keywords will be used for the search engine. -->
+
+        <abstract>
+            <t>
+            This defines PLS (Playground Layer Security), a protocol that ensures secure and authenticated 
+            communication between two ends on Playground network. Overall this is fulfilled via a private-public 
+            key pair signed by reliable third party and a session key generated during the three-way handshake 
+            for encryption and decryption.
+            </t>
+        </abstract>
+    </front>
+
+    <middle>
+        <section title="Introduction">
+        	<section title="Goal of PLS protocol ">
+        	    <t>
+                The goal of the PLS protocol is establishing a secure connection between two parties. To achieve 
+                this function, PLS enables the authentication of the two parties and encrypting data transferred 
+                between the two parties.
+                </t>         		
+        	</section>
+        	<section title="Goal of this document">
+        	   <t>
+        	   This document is intended to explain the policy and the mechanism of  the PLS protocol. The 
+               specification and many algorithm-dependent data structures and rules are included in the body of the 
+               text. 
+               </t>
+            </section>         
+            <section title="Implementation of PLS protocol ">
+        	   <t>
+        	   The main components of PLS protocol are a handshake protocol and a data protocol. For the purpose of 
+        	   handshake, several packet types for transferring information between the server side and client side
+        	   are defined. Then, the regulation of generating keys for the following encryptions is established and
+        	   the method for authentication is applied. When handshake finished, the server and client side starts 
+        	   sending data until the end of connection. 
+               </t>
+            </section>  	
+        </section>	
+
+        <section title="PLS Handshake Protocol">
+
+            <section title="Handshake Protocol Overview">
+                <t>The parameters for creating symmetric encryption and decryption engines are produced during the
+                handshake process. When PLS client and server start communicating at the first time, they use 
+                public-key encryption and preset root certificate to authenticate each other and repeated hashes to
+                generate shared secrets. If any authentication or verification goes wrong, the connection is 
+                considered invalid and is terminated.</t>
+
+                <t>The Handshake Protocol involves the following actions:</t>
+                <t>
+                    <list style="symbols">
+                        <t>Send Hello messages to exchange nonces and certificates to allow the 
+                        client and server to authenticate themselves.</t>
+                        <t>Send Key Exchange messages, which includes the necessary cryptographic 
+                        information to allow the client and server to share their pre-keys.</t>
+                        <t>Send Handshake Done messages to allow the client and server to verify 
+                        that they have the same cryptographic parameters.</t>
+                    </list>
+                </t>
+                <figure>
+                    <artwork><![CDATA[
+Client                                                         Server
+PlsHello(Nc, [C_Certs])         ------>
+                                <------       PlsHello(Ns, [S_Certs])
+PlsKeyExchange({PKc}S_public, Ns+1)  ------>
+                         <------  PlsKeyExchange({PKs}C_public, Nc+1)  
+PlsHandshakeDone(Sha1(M1, M2, M3, M4))  ------>
+                      <------  PlsHandshakeDone(Sha1(M1, M2, M3, M4))
+(finished)]]>
+                    </artwork>
+                </figure>
+                <t>Figure 1. Message Flow for Handshake</t>
+
+                <t>
+                As shown in the figure above, the client starts with sending a PlsHello message. In this message,
+                the client sends a 64-bit random integer as nonce (Nc) and its certificate chain with public key 
+                embedded. If the client's certificate is authenticated, the server responds with another PlsHello 
+                message that contains its certificate chain and its random nonce (Ns).</t>
+                <t>
+                When the client receives PlsHello message from the server, client generates a Pre-key (PKc), encrypt
+                it with server's public key extracted from certificate and send it in a PlsKeyExchange message with
+                server's nonce plus one (Ns+1) to the server. The server checks Ns+1 with its own nonce and then 
+                send back its PlsKeyExchange with the server's Pre-key (PKs) encrypted with client's public key and 
+                Nc+1 to the client. As a result, both the client and the server have their identical copies of Nc, 
+                Ns, PKc and PKs. They are used in a hashing process to generate symmetric cryptographic parameters (
+                detailed below).</t>
+                <t>
+                After the parameter transmission is done, both the server and the client validates the integrity of 
+                messages sent in the first 4 steps. A validation hash is generated with the serialized, concatenated
+                messages (M1, M2, M3, M4). Then they exchange the validation hash in the form of PlsHandshakeDone 
+                message to each other and if the previous steps are correctly done, the hash generated from M1 - M4 
+                should be the same, which means they have the same 2 nonces and pre-keys for generating an identical 
+                parameter set.</t>
+            </section>
+
+            <section title="Handshake Protocol">
+                <t>
+                <figure>
+                        <artwork><![CDATA[
+    class PlsHello(PacketType):
+        DEFINITION_IDENTIFIER = "netsecfall2017.pls.hello"
+        DEFINITION_VERSION = "1.0"
+        FIELDS = [
+        ("Nonce", UINT64),
+        ("Certs", LIST(BUFFER))
+        ]
+
+    class PlsKeyExchange(PacketType):
+        DEFINITION_IDENTIFIER = "netsecfall2017.pls.keyexchange"
+        DEFINITION_VERSION = "1.0"
+        FIELDS = [
+        ("PreKey", BUFFER),
+        ("NoncePlusOne", UINT64),
+        ]
+
+    class PlsHandshakeDone(PacketType):
+        DEFINITION_IDENTIFIER = "netsecfall2017.pls.handshakedone"
+        DEFINITION_VERSION = "1.0"
+        FIELDS = [
+        ("ValidationHash", BUFFER)
+        ]]]>
+                        </artwork>
+                </figure>
+
+                The Handshake Protocol messages are presented above and they must be   sent in order. If they are 
+                sent in an unexpected order, errors will happen and lead to failure of connection. 
+              </t>
+              <section title="PlsHello Message">
+              	<t>
+                   The PlsHello message is used to exchange public keys and certificates for authentication. It 
+                   contains 2 fields: Nonce and Certs. Nonce is an random 64-bit number that will be included in 
+                   hashes to generate cryptographic parameters. Certs are a list of certificates including the 
+                   certificate of the client and the intermediate CAs. There may be several certificates of 
+                   intermediate CAs attached after the certificate of client or server. Each certificate is signed 
+                   by the CA whose certificate is appended after it and the last certificate should be the one 
+                   signed by root.
+              	</t>
+              	<t>
+              		During authentication process, if there are multiple certificates of intermediate CA, a party 
+              		will first verify the final intermediate CA certificate against its pre-acquired root 
+              		certificate. In the same fashion, other certificates including the first one, client or server 
+              		certificate, will be verified against the next certificate in the list. After all signatures are 
+              		successfully verified, the process of authentication is finished. The client or server's public
+              	    key embedded in the first certificate of the list is extracted and stored afterwards
+              	</t>
+              </section>
+              <section title="PlsKeyExchange Message">
+              	<t>
+                    The PlsKeyExchange Message is used to exchange a randomly-generated 128-bit pre-key in bytes 
+                    format. For each party of connection, the process begins with that it randomly generates a 
+                    pre-key and encrypts it using the public key of its partner. Then the party sends the encrypted 
+                    pre-key to partner and the partner can decrypt it via its own private key. An additional length 
+                    check can be performed to make sure the decrypted pre-key is exactly 128 bits. NoncePlusOne 
+                    represents the nonce in PlsHello packet + 1 to ensure a correct nonce is transmitted.
+                </t>
+              </section>
+              <section title="PlsHandshakeDone Message">
+              <t>
+              	This message contains the hash of the 4 previous PlsHello packets and PlsKeyExchange packets from 
+                  both sides. The hash results will be exchanged to verify the consistency of the messages obtained 
+                  by the client and the server.
+              </t>
+              </section>
+            </section>
+
+            <section title="Data Communication">
+                <t>The data that flows between sender and receiver can be thought of
+                    packets of data. After the connection is established, one side can
+                    send serialized data to the transport layer. In the transport
+                    layer, a long data stream needs to be split into multiple chunks
+                    and sent in batched DATA packets to the receiver side. As some
+                    chunks may be lost or damaged (detectable from checksum mismatch)
+                    or disorganized by network congestion, the receiver needs to verify
+                    the packets' integrity with checksum and their correct order with
+                    sequence number upon retrieval of the chunks.
+                </t>
+
+                <t>An ACK packet is replied for any DATA packet correctly received.
+                    As ACKs are prone to loss, an ACK is still required even if the
+                    DATA packet is a duplicate of one previous packet and is to be
+                    discarded. This prevents the sender from repeatedly sending the
+                    same packet without any confirmation of retrieval.</t>
+
+            </section>
+
+            <section title="Disconnection">
+                <t> After a connection's missions are all fulfilled, the client can
+                    initiate a 4-way handshake process for correctly end the connection.
+                    Before the connection ends, all the remaining packets should be
+                    correctly sent and acknowledged. Once this is done for client, a
+                    RIP packet is sent to the server for indication. The server confirms
+                    it with a RIP_ACK packet and then stops processing new data while
+                    focusing on clearing its own sending buffer. After all the remaining
+                    packets are sent and ACKed, it sends its RIP packet and after client
+                    replies with RIP_ACK (or a timeout if it is lost), it informs the
+                    application layer of the end of connection. The second RIP_ACK sent
+                    also means client can safely notify the connection's end to the
+                    application. </t>
+            </section>
+        </section>
+        <section title="The PLS Data Protocol">
+
+            <section title="Data Protocol Overview">
+                <t>The Data Protocol is developed with a set of rules to ensure the security of data transmission. 
+                It applies symmetric encryption algorithms for data encryption and decryption to guarantee privacy 
+                and a verification process for integrity of the sent and received data. It also regulates that a 
+                close message can be sent to inform the partner to close the connection from both side. </t>
+
+                <t>The Data Protocol involves the following actions: </t>
+                
+                <t>
+                    <list style="numbers">
+                        <t>When retrieving data from the application, encrypt the data and hash the ciphertext 
+                    to produce a verification code, then build and send the PlsData message containing them to the 
+                    other side.</t>
+                        <t>When receiving PlsData from the other side, hash the ciphertext to produce a verification 
+                    code and compare it with the one in the packet to verify the consistency. Then the ciphertext is 
+                    decrypted and the plaintext is passed to application. </t>
+                        <t>When connection is closed by application, send close message to notify the other side to 
+                    terminate the connection.</t>
+                    </list>
+                </t>
+
+            </section>
+
+            <section title="Data Protocol ">
+                <t>This protocol is used to ensure the security of transferring data. The Data Protocol messages are presented as follows:</t>
+
+                <figure>
+                     <artwork><![CDATA[
+class PlsData(PlsBasicType):
+    DEFINITION_IDENTIFIER = "netsecfall2017.pls.data"
+    DEFINITION_VERSION = "1.0"
+    FIELDS = [
+        ("Ciphertext", BUFFER),
+        ("Mac", BUFFER)
+    ]]]>
+                     </artwork>       
+                </figure>
+
+                <figure>
+                     <artwork><![CDATA[
+class PlsClose(PlsBasicType):
+    DEFINITION_IDENTIFIER = "netsecfall2017.pls.close"
+    DEFINITION_VERSION = "1.0"
+    FIELDS = [
+        ("Error", STRING({Optional:True}))
+    ]]]>
+                     </artwork>       
+                </figure>
+
+                <section title="PLSData Message">
+
+                    <t>This message is triggered by write operations from application layer. When raw data is passed from 
+                    the layer above, it is encrypted to produce ciphertext. Plaintext data should never be sent during PLS 
+                    data transmission. The Mac field serves as a validation hash of ciphertext and can be verified only by 
+                    the recipient to keep the data intact.</t>
+
+                    <t> Any party of connection can send PlsData to each other after successfully completing handshake. 
+                    The packet length has no upper limit and chunking is left to the lower transport layer protocol 
+                    (PEEP in our case; see PRFC 5246). The intact data bytes decrypted from ciphertext and validated by 
+                    MAC is then sent to the upper protocol upon retrieval.</t>
+
+                </section>
+
+                <section title="PLSClose Message">
+
+                    <t> If one party of connection decides to terminate it, the party sends PLSClose to its partner. 
+                    PLSClose message may contain a Error field, which indicates that the cause of termination is unexpected 
+                    like a validation failure. If the termination is normal and initiated from the application, this field is 
+                    left blank. The partner receiving PLSClose should close the transport and if there was an error, notify 
+                    the user about it.</t>
+
+                </section>
+
+            </section>
+
+        </section>
+
+<!--         <section title="The PLS Data Protocol">
+
+            <section title="Data Protocol Overview">
+                <t>The Data Protocol is developed with a set of rules to ensure the security of data transmission. 
+                It applies symmetric encryption algorithms for data encryption and decryption to guarantee privacy 
+                and a verification process for integrity of the sent and received data. It also regulates that a 
+                close message can be sent to inform the partner to close the connection from both side. </t>
+
+                <t>The Data Protocol involves the following actions: </t>
+
+                    <section> When retrieving data from the application, encrypt the data and hash the ciphertext 
+                    to produce a verification code, then build and send the PlsData message containing them to the 
+                    other side.</section>
+
+                    <section>When receiving PlsData from the other side, hash the ciphertext to produce a verification 
+                    code and compare it with the one in the packet to verify the consistency. Then the ciphertext is 
+                    decrypted and the plaintext is passed to application. </section>
+
+                    <section> When connection is closed by application, send close message to notify the other side to 
+                    terminate the connection.</section>
+
+            </section>
+
+            <section title="Data Protocol ">
+                <t>This protocol is used to ensure the security of transferring data. The Data Protocol messages are presented as follows:</t>
+
+                <figure>
+                     <artwork><![CDATA[
+                        class PlsData(PlsBasicType):
+                            DEFINITION_IDENTIFIER = "netsecfall2017.pls.data"
+                            DEFINITION_VERSION = "1.0"
+                            FIELDS = [
+		                        ("Ciphertext", BUFFER),
+		                        ("Mac", BUFFER)
+                            ]
+                        ]]>
+                     </artwork>       
+                </figure>
+
+                <figure>
+                     <artwork><![CDATA[
+                        class PlsClose(PlsBasicType):
+  	                        DEFINITION_IDENTIFIER = "netsecfall2017.pls.close"
+ 	                        DEFINITION_VERSION = "1.0"
+  	                        FIELDS = [
+    		                    ("Error", STRING({Optional:True}))
+  	                        ]
+                        ]]>
+                     </artwork>       
+                </figure>
+
+                <section title="PLSData Message">
+
+                    <t>This message is triggered by write operations from application layer. When raw data is passed from 
+                    the layer above, it is encrypted to produce ciphertext. Plaintext data should never be sent during PLS 
+                    data transmission. The Mac field serves as a validation hash of ciphertext and can be verified only by 
+                    the recipient to keep the data intact.</t>
+
+                    <t> Any party of connection can send PlsData to each other after successfully completing handshake. 
+                    The packet length has no upper limit and chunking is left to the lower transport layer protocol 
+                    (PEEP in our case; see PRFC 5246). The intact data bytes decrypted from ciphertext and validated by 
+                    MAC is then sent to the upper protocol upon retrieval.</t>
+
+                </section>
+
+                <section title="PLSClose Message">
+
+                    <t> If one party of connection decides to terminate it, the party sends PLSClose to its partner. 
+                    PLSClose message may contain a Error field, which indicates that the cause of termination is unexpected 
+                    like a validation failure. If the termination is normal and initiated from the application, this field is 
+                    left blank. The partner receiving PLSClose should close the transport and if there was an error, notify 
+                    the user about it.</t>
+
+                </section>
+
+            </section>
+        </section> -->
+
+        <section title="Cryptographic Details">
+            <section title="Cryptographic Overview">
+                <t>In order to ensure the security of connection, the PLS protocol applies a series of cryptographic algorithms with symmetric and asymmetric encryption, hashing and message authentication code (MAC). Due to initial incredibility, asymmetric encryption is required for authentication of information provided by certificates. As symmetric encryption is more efficient, the actual data communication is built upon symmetric encryption with session keys produced and confirmed in handshake.</t>
+
+                <t>
+                	The security policy of PLS is that both sides of communication can send data to each other with trustable identities (authenticity) and a man-in-the-middle cannot peep into it (privacy) or tamper with it (integrity). Asymmetric encryption for certificates is for enforcing authenticity, symmetric encryption of data is for privacy while verification of message authentication code is for integrity.
+                </t>
+              <section title="Certificate Signature">
+                 <t>
+                 	The initial authentication is achieved by certificate signatures. RSA, an asymmetric encryption algorithm, is used for authentication purpose. Private keys and public keys are generated via RSA and the public keys are signed by Certificate Authority (CA) in the format of X.509 certificates.</t>
+
+                 <t>
+                    After successful authentication, the pre-keys are encrypted by the other side's public key with PKCS1 OAEP padding during transmission. The other side uses its own private key to decrypt the pre-key and as long as the private keys are not leaked, pre-keys should be secure from attackers.
+
+                 </t>
+             </section>
+            
+            </section>
+
+            <section title="Key Derivation">
+            	<t>
+            	AES, a symmetric encryption algorithm, requires that both side of communication must have the same key (session key) for encrypting and decrypting messages. To get a series of keys for AES encryption and decryption, a 800-bit stream is generated using SHA1 hashing of the seed "PLS1.0" + Nc + Ns + PKc + PKs, repeated 5 times as follows:
+                <figure>
+                     <artwork><![CDATA[
+block_0 = hash("PLS1.0"+Nc+Ns+PKc+PKs)
+block_1 = hash(block_0)
+block_2 = hash(block_1)
+block_3 = hash(block_2)
+block_4 = hash(block_3)]]]>
+                     </artwork>       
+                </figure>
+                Each hash adds 160 bits to the bit stream. As a result, the completed stream (block_0 to _4) is 800 bits long and provides 6 128-bit numbers after being cut off at 768 bits. It is then divided to a series of keys and initial values. The order of the keys and initial values is as follows:
+                EKc = the first 128 bits
+                EKs = the second 128 bits
+                IVc = the third 128 bits
+                IVs = the fourth 128 bits
+                MKc = the 5th 128 bits
+                MKs = the 6th 128 bits
+                These keys and initial values can be used to build encryption, decryption, MAC and verification engines for the Data Protocol. As they are derived from hashed of the same 4 numbers, both sides are guaranteed to have correct keys to decrypt data that is encrypted on the other side.</t>
+            </section>
+
+            <section title="Data Encryption and Decryption">
+            	<t>The PLS protocol utilizes the stream cipher AES-CTR to provide patternless and efficient data encryption. AES-CTR uses successive values returned from a counter  to generate next keystream blocks. The counter is a function which produces a sequence guaranteed not to repeat for a long time.</t>
+                <t>
+                To create an AES-CTR cipher, an encryption key and a counter with specific initial value should be provided. After either side has sent the handshake complete message, it begins to send data. Before sending data, 2 AES-CTR ciphers in pair are created. One cipher is for encrypting its own data and the other one is for decrypting the partner's data. The purpose of ciphers should be swapped on the other side where the partner's encryption key serves as decryption key and vice versa.</t>
+                
+                <t>
+                For instance, after the client sends encrypted data under a cipher built with key EKc and counter's initial value IVc, the server receives the encrypted data and decrypts it using the same cipher with EKc and IVc. When server sends encrypted data, it uses a cipher built with EKs and IVs and the client will decrypt it with the same. As both sides have the same set of (EKc, EKs, IVc, IVs), they are guaranteed to build the symmetric cipher pair.
+                </t>
+
+            	
+            </section>
+
+            <section title="Data Verification">
+             	<t>
+                    Stream ciphers has the problem of malleability, which is that an attacker can modify the data encrypted by it without being detected by the recipient. Therefore, additional verification process is required for integrity of transmitted data packets.</t>
+                <t>
+                    Message authentication code (MAC) is a short piece of information used to authenticate a message. PLS uses HMAC-SHA1 to generate this information for each data packet by hashing the data after it is encrypted by AES-CTR. Each side builds an HMAC-SHA1 MAC engine and a verification engine for this purpose. 2 MAC keys (MKc, MKs) generated in key derivation are used to initialize the engines, which keeps the hash process private and unable to be replicated by a man-in-the-middle attacker.</t>
+                <t>
+                    Take the client for example, whose MAC engine has MKc as key and verification engine has MKs as key. After the data is encrypted, the ciphertext C is passed to the MAC engine and produce a verification code V using MKc. Then C and V will be sent as the PLS data message (C,V). The data packet is sent to the server and it first extract C from the data message, pass it to the verification engine and a reference verification code V' is produced using MKc (the purpose of engines being swapped from client). The server compares V' with V. If V' does not match V, the data packet is corrupt. Otherwise, the ciphertext C is passed to the decryption engine to be decrypted as correct plaintext. The server can generate a MAC with MKs to be verifiable by the client via the same procedure.
+                </t>
+            </section>
+            	
+            </section>
+     
+
+</middle>
+    <!--  *****BACK MATTER ***** -->
+
+    <back>
+        <!-- References split into informative and normative -->
+
+        <!-- There are 2 ways to insert reference entries from the citation libraries:
+    1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+    2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+       (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+    Both are cited textually in the same manner: by using xref elements.
+    If you use the PI option, xml2rfc will, by default, try to find included files in the same
+    directory as the including file. You can also define the XML_LIBRARY environment variable
+    with a value containing a set of directories to search.  These can be either in the local
+    filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+        <!-- Change Log
+
+v00 2017-10-14  EBD   Initial version
+
+  -->
+    </back>
+</rfc>
