@@ -33,7 +33,7 @@ class ClientPLSProtocol(PLSProtocol):
             if isinstance(pkt, PlsHello) and self.state == self.STATE_CLIENT_HELLO:
                 # Deserialize certs in packet, attach root cert
                 peerCerts = [CipherUtil.getCertFromBytes(c) for c in pkt.Certs]
-                if self.verifyCerts(peerCerts + [self.rootCert]):
+                if self.verifyCerts(peerCerts):
                     self.dbgPrint("Client: received PlsHello packet from server, current state: {!r}".format(
                         self.STATE_DESC[self.state]))
                     self.messages["M2"] = pkt.__serialize__()

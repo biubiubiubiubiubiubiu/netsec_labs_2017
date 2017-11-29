@@ -25,7 +25,7 @@ class ServerPLSProtocol(PLSProtocol):
             if isinstance(pkt, PlsHello) and self.state == self.STATE_SERVER_HELLO:
                 # Deserialize certs in packet, attach root cert
                 peerCerts = [CipherUtil.getCertFromBytes(c) for c in pkt.Certs]
-                if self.verifyCerts(peerCerts + [self.rootCert]):
+                if self.verifyCerts(peerCerts):
                     self.dbgPrint("Server: PlsHello received!")
                     self.messages["M1"] = pkt.__serialize__()
                     self.peerPublicKey = RSA.importKey(self.serializePublicKeyFromCert(peerCerts[0]))

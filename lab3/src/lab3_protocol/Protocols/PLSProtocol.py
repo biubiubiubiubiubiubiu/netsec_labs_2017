@@ -12,7 +12,7 @@ class PLSProtocol(StackingProtocol):
     NONCE_LENGTH_BYTES = 8
     PRE_KEY_LENGTH_BYTES = 16
 
-    DEBUG_MODE = False
+    DEBUG_MODE = True
     # State Definitions
     STATE_DEFAULT = 0
 
@@ -120,24 +120,36 @@ class PLSProtocol(StackingProtocol):
         self.certs = [CipherUtil.getCertFromBytes(c.encode("utf-8")) for c in rawCerts]
         self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(self.certs[0]))
 
-
         self.rootCert = CipherUtil.getCertFromBytes(getRootCert().encode("utf-8"))
 
     def verifyCerts(self, certs):
+        getCommonName = lambda cert: CipherUtil.getCertSubject(cert)["commonName"]
+        if getCommonName(certs[-1]) == getCommonName(self.rootCert):
+            certs.pop()
         certs.append(self.rootCert)
 
-        commonName = CipherUtil.getCertSubject(certs[0])["commonName"]
-        groupCommonName = CipherUtil.getCertSubject(certs[1])["commonName"]
+        for i, cert in enumerate(certs):
+            if i == len(certs) - 1:
+                break
+            nextCert = certs[i+1]
+            commonName = getCommonName(cert)
+            nextCommonName = getCommonName(nextCert)
+            if commonName.split(".")[:-1] != nextCommonName.split("."):
+                self.dbgPrint("Error: cert common name mismatch: " + commonName + ", " + nextCommonName)
+                return False
+
+        commonName = getCommonName(certs[0])
+        # groupCommonName = CipherUtil.getCertSubject(certs[1])["commonName"]
         peerAddressList = [str(i) for i in self.peerAddress[0].split(".")]
         peerAddress = ".".join(peerAddressList)
-        peerAddressPrefix = ".".join(peerAddressList[:3])
+        # peerAddressPrefix = ".".join(peerAddressList[:3])
 
         if commonName != peerAddress:
             self.dbgPrint("Error: address mismatch: " + commonName + ", " + peerAddress)
             return False
-        elif groupCommonName != peerAddressPrefix:
-            self.dbgPrint("Error: group address mismatch: " + groupCommonName + ", " + peerAddressPrefix)
-            return False
+        # elif groupCommonName != peerAddressPrefix:
+        #     self.dbgPrint("Error: group address mismatch: " + groupCommonName + ", " + peerAddressPrefix)
+        #     return False
         else:
             return CipherUtil.ValidateCertChainSigs(certs)
 
