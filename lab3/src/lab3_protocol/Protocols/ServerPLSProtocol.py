@@ -2,11 +2,10 @@ from ..Packets.PLSPackets import PlsHello, PlsKeyExchange, PlsHandshakeDone, Pls
 from ..Transports.PLSTransport import PLSTransport
 from .PLSProtocol import PLSProtocol
 from playground.common import CipherUtil
-from Crypto.PublicKey import RSA
-from Crypto.Hash import HMAC, SHA
-from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.Util import Counter
-import codecs
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.primitives.asymmetric import padding
 
 
 class ServerPLSProtocol(PLSProtocol):
@@ -16,10 +15,9 @@ class ServerPLSProtocol(PLSProtocol):
 
     def connection_made(self, transport):
         super().connection_made(transport)
-        self.importKeys("keys", "server")
+        self.importKeys()
 
     def data_received(self, data):
-        # if self.state != self.STATE_SERVER_TRANSFER:
         self.deserializer.update(data)
         for pkt in self.deserializer.nextPackets():
             if isinstance(pkt, PlsHello) and self.state == self.STATE_SERVER_HELLO:
@@ -28,8 +26,7 @@ class ServerPLSProtocol(PLSProtocol):
                 if self.verifyCerts(peerCerts):
                     self.dbgPrint("Server: PlsHello received!")
                     self.messages["M1"] = pkt.__serialize__()
-                    self.peerPublicKey = RSA.importKey(self.serializePublicKeyFromCert(peerCerts[0]))
-                    self.peerPublicCipher = PKCS1_OAEP.new(self.peerPublicKey)
+                    self.peerPublicKey = peerCerts[0].public_key()
                     self.clientNonce = pkt.Nonce
 
                     # Make PlsHello and send back
@@ -48,7 +45,14 @@ class ServerPLSProtocol(PLSProtocol):
                 if self.serverNonce + 1 == pkt.NoncePlusOne:
                     self.dbgPrint("Server: received PlsKeyExchange packet from client")
                     self.messages["M3"] = pkt.__serialize__()
-                    self.clientPreKey = self.privateCipher.decrypt(pkt.PreKey)
+                    self.clientPreKey = self.privateKey.decrypt(
+                        pkt.PreKey,
+                        padding.OAEP(
+                            mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                            algorithm=hashes.SHA1(),
+                            label=None
+                        )
+                    )
                     if len(self.clientPreKey) != self.PRE_KEY_LENGTH_BYTES:
                         self.handleError("Error: Bad client pre-key with length = " + str(len(self.clientPreKey) * 8)
                                          + " bits, wrong RSA decryption?")
@@ -59,8 +63,15 @@ class ServerPLSProtocol(PLSProtocol):
                         self.serverPreKey = self.generatePreKey()
                         self.dbgPrint(
                             "Server: sending plsKeyExchange packet, prekey: {!r}".format(self.serverPreKey.hex()))
-                        plsKeyExchangePkt = PlsKeyExchange.makePlsKeyExchange(
-                            self.peerPublicCipher.encrypt(self.serverPreKey), self.clientNonce + 1)
+                        encryptedPreKey = self.peerPublicKey.encrypt(
+                            self.serverPreKey,
+                            padding.OAEP(
+                                mgf=padding.MGF1(algorithm=hashes.SHA1()),
+                                algorithm=hashes.SHA1(),
+                                label=None
+                            )
+                        )
+                        plsKeyExchangePkt = PlsKeyExchange.makePlsKeyExchange(encryptedPreKey, self.clientNonce + 1)
                         self.messages["M4"] = plsKeyExchangePkt.__serialize__()
                         self.transport.write(plsKeyExchangePkt.__serialize__())
                         self.state = self.STATE_SERVER_PLS_HANDSHAKE_DONE
@@ -101,10 +112,7 @@ class ServerPLSProtocol(PLSProtocol):
                                  + self.STATE_DESC[self.state])
 
     def setEngines(self):
-        # TODO: fix counter initial value
-        self.encEngine = AES.new(self.EKs, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVs, 'hex'), 16)))
-        self.decEngine = AES.new(self.EKc, AES.MODE_CTR,
-                                 counter=Counter.new(128, initial_value=int(codecs.encode(self.IVc, 'hex'), 16)))
-        self.macEngine = HMAC.new(self.MKs, digestmod=SHA)
-        self.verificationEngine = HMAC.new(self.MKc, digestmod=SHA)
+        self.encEngine = Cipher(algorithms.AES(self.EKs), modes.CTR(self.IVs), backend=default_backend()).encryptor()
+        self.decEngine = Cipher(algorithms.AES(self.EKc), modes.CTR(self.IVc), backend=default_backend()).decryptor()
+        self.macEngine = hmac.HMAC(self.MKs, hashes.SHA1(), backend=default_backend())
+        self.verificationEngine = hmac.HMAC(self.MKc, hashes.SHA1(), backend=default_backend())

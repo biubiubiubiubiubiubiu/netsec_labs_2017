@@ -1,18 +1,18 @@
 from playground.network.common import StackingProtocol
 from playground.common import CipherUtil
-from Crypto.PublicKey import RSA
-from Crypto.Hash import SHA
-from Crypto import Random
-from Crypto.Cipher import PKCS1_OAEP
 from ..Packets.PLSPackets import PlsData, PlsClose, PlsBasicType
 from ..CertFactory import *
+import os
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 
 
 class PLSProtocol(StackingProtocol):
     NONCE_LENGTH_BYTES = 8
     PRE_KEY_LENGTH_BYTES = 16
 
-    DEBUG_MODE = True
+    DEBUG_MODE = False
     # State Definitions
     STATE_DEFAULT = 0
 
@@ -55,12 +55,10 @@ class PLSProtocol(StackingProtocol):
         self.messages = {}
 
         self.privateKey = None
-        self.privateCipher = None
         self.rootCert = None
         self.certs = []
         self.publicKey = None
         self.peerPublicKey = None
-        self.peerPublicCipher = None
         self.peerAddress = None
 
         self.EKc = None
@@ -91,34 +89,35 @@ class PLSProtocol(StackingProtocol):
 
     def decrypt(self, data):
         self.dbgPrint("Decrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
-        return self.decEngine.decrypt(data)
+        return self.decEngine.update(data)
 
     def encrypt(self, data):
         self.dbgPrint("Encrypting data at PLS layer on " + type(self.higherProtocol()).__name__)
-        return self.encEngine.encrypt(data)
+        return self.encEngine.update(data)
 
     def generateNonce(self):
-        return int.from_bytes(Random.get_random_bytes(self.NONCE_LENGTH_BYTES), byteorder='big')
+        return int.from_bytes(os.urandom(self.NONCE_LENGTH_BYTES), byteorder='big')
 
     def generatePreKey(self):
-        return Random.get_random_bytes(self.PRE_KEY_LENGTH_BYTES)
+        return os.urandom(self.PRE_KEY_LENGTH_BYTES)
 
     def serializePublicKeyFromCert(self, cert):
-        from cryptography.hazmat.primitives import serialization
         return cert.public_key().public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
-    def importKeys(self, path, privateName):
+    def importKeys(self):
         addr = self.transport.get_extra_info('sockname')[0]
-        rawKey = getPrivateKeyForAddr(addr)
-        self.privateKey = RSA.importKey(rawKey.encode("utf-8"))
-        self.privateCipher = PKCS1_OAEP.new(self.privateKey)
+        self.privateKey = serialization.load_pem_private_key(
+            str.encode(getPrivateKeyForAddr(addr)),
+            password = None,
+            backend = default_backend()
+        )
 
         rawCerts = getCertsForAddr(addr)
         self.certs = [CipherUtil.getCertFromBytes(c.encode("utf-8")) for c in rawCerts]
-        self.publicKey = RSA.importKey(self.serializePublicKeyFromCert(self.certs[0]))
+        self.publicKey = self.certs[0].public_key()
 
         self.rootCert = CipherUtil.getCertFromBytes(getRootCert().encode("utf-8"))
 
@@ -139,49 +138,44 @@ class PLSProtocol(StackingProtocol):
                 return False
 
         commonName = getCommonName(certs[0])
-        # groupCommonName = CipherUtil.getCertSubject(certs[1])["commonName"]
         peerAddressList = [str(i) for i in self.peerAddress[0].split(".")]
         peerAddress = ".".join(peerAddressList)
-        # peerAddressPrefix = ".".join(peerAddressList[:3])
 
         if commonName != peerAddress:
             self.dbgPrint("Error: address mismatch: " + commonName + ", " + peerAddress)
             return False
-        # elif groupCommonName != peerAddressPrefix:
-        #     self.dbgPrint("Error: group address mismatch: " + groupCommonName + ", " + peerAddressPrefix)
-        #     return False
         else:
             return CipherUtil.ValidateCertChainSigs(certs)
 
     def verifyValidationHash(self, hash):
-        hasher = SHA.new()
+        hasher = hashes.Hash(hashes.SHA1(), backend=default_backend())
         hasher.update(self.messages["M1"] + self.messages["M2"] + self.messages["M3"] + self.messages["M4"])
-        return hash == hasher.digest()
+        return hash == hasher.finalize()
 
     def dbgPrint(self, msg, forced=False):
         if (self.DEBUG_MODE or forced):
             print(type(self).__name__ + ": " + msg)
 
     def generateDerivationHash(self):
-        hasher = SHA.new()
+        hasher = hashes.Hash(hashes.SHA1(), backend=default_backend())
         hasher.update(
             b"PLS1.0" + self.clientNonce.to_bytes(self.NONCE_LENGTH_BYTES, byteorder='big')
             + self.serverNonce.to_bytes(self.NONCE_LENGTH_BYTES, byteorder='big')
             + self.clientPreKey + self.serverPreKey)
-        return hasher.digest()
+        return hasher.finalize()
 
     def generateValidationHash(self):
-        hasher = SHA.new()
+        hasher = hashes.Hash(hashes.SHA1(), backend=default_backend())
         hasher.update(self.messages["M1"] + self.messages["M2"] + self.messages["M3"] + self.messages["M4"])
-        return hasher.digest()
+        return hasher.finalize()
 
     def setKeys(self, block_0):
         blocks = []
         blocks.append(block_0)
         for i in range(4):
-            hasher = SHA.new()
+            hasher = hashes.Hash(hashes.SHA1(), backend=default_backend())
             hasher.update(blocks[i])
-            blocks.append(hasher.digest())
+            blocks.append(hasher.finalize())
         keys = b''.join(blocks)[:96]
         self.EKc = keys[:16]
         self.EKs = keys[16:32]
@@ -198,7 +192,7 @@ class PLSProtocol(StackingProtocol):
         engine = self.macEngine.copy()
         # engine = self.macEngine
         engine.update(ciphertext)
-        mac = engine.digest()
+        mac = engine.finalize()
         plsData = PlsData.makePlsData(ciphertext, mac)
         return plsData
 
@@ -206,7 +200,7 @@ class PLSProtocol(StackingProtocol):
         engine = self.verificationEngine.copy()
         # engine = self.verificationEngine
         engine.update(ciphertext)
-        return mac == engine.digest()
+        return mac == engine.finalize()
 
     def handleError(self, error):
         self.sendPlsClose(error)
