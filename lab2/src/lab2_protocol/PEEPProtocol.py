@@ -86,7 +86,7 @@ class PEEPProtocol(StackingProtocol):
 
     def sendSyn(self):
         synPacket = PEEPPacket.makeSynPacket(self.initialSeq)
-        self.dbgPrint("Sending SYN packet with sequence number " + str(self.seqNum) +
+        self.dbgPrint("Sending SYN packet with sequence number " + str(self.initialSeq) +
                       ", current state " + self.STATE_DESC[self.state])
         self.writeWithRate(synPacket, "Syn")
 

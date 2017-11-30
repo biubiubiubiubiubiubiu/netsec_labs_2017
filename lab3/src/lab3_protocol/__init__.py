@@ -7,7 +7,13 @@ from playground.network.common import StackingProtocolFactory
 
 clientStack = StackingProtocolFactory(ClientPLSProtocol, ClientProtocol)
 serverStack = StackingProtocolFactory(ServerPLSProtocol, ServerProtocol)
-myPeepConnector = playground.Connector(protocolStack=(clientStack, serverStack))
-# myPeepConnector = playground.Connector(protocolStack=(ClientProtocol, ServerProtocol))
-playground.setConnector("lab3_protocol", myPeepConnector)
-playground.setConnector("my_team_lab3_protocol", myPeepConnector)
+myPlsConnector = playground.Connector(protocolStack=(clientStack, serverStack))
+clientPlsConnector = playground.Connector(protocolStack=clientStack)
+myPeepConnector = playground.Connector(protocolStack=(ClientProtocol, ServerProtocol))
+clientPeepConnector = playground.Connector(protocolStack=StackingProtocolFactory(ClientProtocol))
+
+playground.setConnector("lab3_protocol", myPlsConnector)
+playground.setConnector("my_team_lab3_protocol", myPlsConnector)
+playground.setConnector("lab3_client_protocol", clientPlsConnector)
+playground.setConnector("lab2_protocol", myPeepConnector)
+playground.setConnector("lab2_client_protocol", clientPeepConnector)
