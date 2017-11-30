@@ -5,8 +5,8 @@ from .Protocols.ServerPLSProtocol import ServerPLSProtocol
 from .Protocols.ClientPLSProtocol import ClientPLSProtocol
 from playground.network.common import StackingProtocolFactory
 
-clientStack = StackingProtocolFactory(ClientPLSProtocol, ClientProtocol)
-serverStack = StackingProtocolFactory(ServerPLSProtocol, ServerProtocol)
+clientStack = StackingProtocolFactory(ClientProtocol, ClientPLSProtocol)
+serverStack = StackingProtocolFactory(ServerProtocol, ServerPLSProtocol)
 myPlsConnector = playground.Connector(protocolStack=(clientStack, serverStack))
 clientPlsConnector = playground.Connector(protocolStack=clientStack)
 serverPlsConnector = playground.Connector(protocolStack=serverStack)
