@@ -16,10 +16,10 @@ class ClientPLSProtocol(PLSProtocol):
         super().connection_made(transport)
         self.importKeys()
         self.state = self.STATE_CLIENT_HELLO
+        self.clientNonce = self.generateNonce()
         self.dbgPrint(
             "Client: Sending Hello message, current state: {!r}, nonce number: {!r}".format(self.STATE_DESC[self.state],
                                                                                             self.clientNonce))
-        self.clientNonce = self.generateNonce()
         # Serialize certs to pack into PlsHello
         certBytes = [CipherUtil.serializeCert(c) for c in self.certs]
         helloPkt = PlsHello.makeHelloPacket(self.clientNonce, certBytes)

@@ -111,8 +111,8 @@ class PLSProtocol(StackingProtocol):
         addr = self.transport.get_extra_info('sockname')[0]
         self.privateKey = serialization.load_pem_private_key(
             str.encode(getPrivateKeyForAddr(addr)),
-            password = None,
-            backend = default_backend()
+            password=None,
+            backend=default_backend()
         )
 
         rawCerts = getCertsForAddr(addr)
@@ -130,7 +130,7 @@ class PLSProtocol(StackingProtocol):
         for i, cert in enumerate(certs):
             if i == len(certs) - 1:
                 break
-            nextCert = certs[i+1]
+            nextCert = certs[i + 1]
             commonName = getCommonName(cert)
             nextCommonName = getCommonName(nextCert)
             if commonName.split(".")[:-1] != nextCommonName.split("."):
