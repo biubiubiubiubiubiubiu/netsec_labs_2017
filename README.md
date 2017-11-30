@@ -24,15 +24,12 @@ The keys needs to be set up for PLS protocol to correctly work.
 
 Here is the folder structure:
 ```
-submission.py
+submission.py (or any application to be run)
 keys/
-    client/
+    app/
         private.key
         cert.crt
-    server/
-        private.key
-        cert.crt
-    group.crt # Intermediate CA
+    ca.crt # Intermediate CA
     root.crt
 ```
 
@@ -51,5 +48,7 @@ openssl req -new -key private.key -out req.csr
 openssl x509 -CA ../group.crt -CAkey ../group.key -CAcreateserial -in req.csr -req -days 365 -out cert.crt
 ```
 
+The default protocol name is lab3_protocol, which is the full client-server stack. Client-only protocol is called "lab3_client_protocol" and server-only is "lab3_server_protocol".
+
 #### TODO LIST:
-1. PRFC Document
+1. PRFC Document - Done!
